@@ -37,7 +37,10 @@ export async function POST(req: Request) {
     data: {
       userId: session.user.id,
       name: parsed.data.name,
-      baseCurrency: parsed.data.baseCurrency,
+      // Market quotes are USD-only, so pin every portfolio to USD to avoid
+      // summing mismatched currencies on the dashboard. Revisit when FX and
+      // non-USD market data are added.
+      baseCurrency: 'USD',
     },
   })
 

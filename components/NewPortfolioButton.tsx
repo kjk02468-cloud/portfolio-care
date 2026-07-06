@@ -7,7 +7,6 @@ export function NewPortfolioButton() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
-  const [currency, setCurrency] = useState('USD')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +18,9 @@ export function NewPortfolioButton() {
       const res = await fetch('/api/portfolios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, baseCurrency: currency }),
+        // Quotes are USD-only for now, so every portfolio is valued in USD.
+        // The currency field stays in the schema for a future FX/KR-market build.
+        body: JSON.stringify({ name, baseCurrency: 'USD' }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -68,16 +69,9 @@ export function NewPortfolioButton() {
         <span className="mb-1 block text-xs font-medium text-secondary">
           통화
         </span>
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none focus:border-brand"
-        >
-          <option value="USD">USD</option>
-          <option value="KRW">KRW</option>
-          <option value="EUR">EUR</option>
-          <option value="JPY">JPY</option>
-        </select>
+        <div className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
+          USD
+        </div>
       </label>
       <button
         type="submit"
