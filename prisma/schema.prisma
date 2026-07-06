@@ -1,0 +1,79 @@
+// Prisma schema for the portfolio management dashboard.
+// SQLite for local development; swap `provider`/`url` for Postgres in production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  portfolios   Portfolio[]
+  watchlist    WatchlistItem[]
+}
+
+model Portfolio {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  baseCurrency String        @default("USD")
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  snapshots    Snapshot[]
+
+  @@index([userId])
+}
+
+enum TransactionSide {
+  BUY
+  SELL
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  portfolioId String
+  symbol      String
+  name        String?
+  assetType   String          @default("STOCK")
+  side        TransactionSide @default(BUY)
+  quantity    Float
+  price       Float
+  fee         Float           @default(0)
+  tradedAt    DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  portfolio   Portfolio       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([symbol])
+}
+
+// Periodic total-value snapshots used to render the portfolio value trend chart.
+model Snapshot {
+  id          String    @id @default(cuid())
+  portfolioId String
+  totalValue  Float
+  totalCost   Float
+  takenAt     DateTime  @default(now())
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  symbol    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+}
