@@ -76,7 +76,7 @@ export default async function DashboardPage() {
         </div>
         {data.portfolios.length === 0 ? (
           <div className="card p-8 text-center text-secondary">
-            포트폴리오가 없습니다. 위의 버튼으로 추가하세요.
+            아직 포트폴리오가 없어요. 위 버튼으로 하나 만들어 볼까요?
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

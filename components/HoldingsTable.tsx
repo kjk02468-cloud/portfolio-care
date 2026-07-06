@@ -17,7 +17,7 @@ export function HoldingsTable({
   if (holdings.length === 0) {
     return (
       <div className="card p-8 text-center text-secondary">
-        아직 보유 종목이 없습니다. 거래를 추가하면 여기에 표시됩니다.
+        아직 담은 종목이 없어요. 첫 거래를 추가하면 여기에 나타나요.
       </div>
     )
   }

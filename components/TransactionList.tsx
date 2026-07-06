@@ -29,7 +29,7 @@ export function TransactionList({
   if (transactions.length === 0) {
     return (
       <div className="card p-8 text-center text-secondary">
-        아직 거래 내역이 없습니다.
+        아직 거래 내역이 없어요. 첫 매수를 기록해 보세요.
       </div>
     )
   }

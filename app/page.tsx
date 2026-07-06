@@ -5,20 +5,20 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 
 const features = [
   {
-    title: '실시간 시세 연동',
-    desc: '보유 종목의 현재가를 자동으로 불러와 평가금액과 수익률을 계산합니다.',
+    title: '가격은 알아서 최신으로',
+    desc: '내가 담은 종목이 지금 얼마인지, 실시간 시세로 바로 보여드려요.',
   },
   {
-    title: '거래 기반 자동 집계',
-    desc: '매수·매도 내역만 입력하면 보유수량과 평균단가가 자동으로 계산됩니다.',
+    title: '계산은 맡겨두세요',
+    desc: '사고판 기록만 남기면 평균 단가랑 수익률은 알아서 정리돼요.',
   },
   {
-    title: '자산 배분 시각화',
-    desc: '종목별 비중과 자산 추이를 차트로 한눈에 파악합니다.',
+    title: '어디에 얼마나 담겼는지',
+    desc: '종목별 비중과 자산 흐름을 차트로 한눈에 볼 수 있어요.',
   },
   {
-    title: '다중 포트폴리오',
-    desc: '계좌·전략별로 포트폴리오를 나눠 관리하고 전체를 합산해 봅니다.',
+    title: '계좌는 따로, 전체는 한 번에',
+    desc: '계좌나 전략별로 나눠 담고, 합쳐서 전체도 볼 수 있어요.',
   },
 ]
 
@@ -58,13 +58,13 @@ export default async function HomePage() {
             투자 포트폴리오 관리 대시보드
           </p>
           <h1 className="max-w-2xl text-4xl font-bold leading-tight text-primary sm:text-5xl">
-            내 투자, 한 화면에서
+            지금 내 투자,
             <br />
-            <span className="text-brand">수익률까지 명확하게</span>
+            <span className="text-brand">얼마나 잘하고 있을까?</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-secondary">
-            종목과 거래를 등록하면 실시간 시세로 평가금액·손익·자산 배분을
-            자동으로 계산해 보여줍니다.
+            사고판 기록만 남기면 실시간 시세로 수익률과 자산 배분까지
+            알아서 계산해 드려요.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
