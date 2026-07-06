@@ -58,7 +58,53 @@ async function main() {
     })
   }
 
-  console.log(`Seeded demo account: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`)
+  // ── JACK1 LENS seed: admin, stocks, and one published post ────────────────
+  const ADMIN_EMAIL = 'admin@portfolio.care'
+  const ADMIN_PASSWORD = 'admin1234'
+  await prisma.user.deleteMany({ where: { email: ADMIN_EMAIL } })
+  const admin = await prisma.user.create({
+    data: {
+      email: ADMIN_EMAIL,
+      name: '애널리스트',
+      passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 10),
+      role: 'ADMIN',
+    },
+  })
+
+  const stocks = [
+    { ticker: 'AAPL', name: 'Apple Inc.', industry: 'Consumer Electronics', sector: 'Technology' },
+    { ticker: 'MSFT', name: 'Microsoft', industry: 'Software', sector: 'Technology' },
+    { ticker: 'NVDA', name: 'NVIDIA', industry: 'Semiconductors', sector: 'Technology' },
+    { ticker: 'GOOGL', name: 'Alphabet', industry: 'Internet', sector: 'Communication' },
+    { ticker: 'TSLA', name: 'Tesla', industry: 'Auto Manufacturers', sector: 'Consumer Cyclical' },
+    { ticker: 'SCHD', name: 'Schwab US Dividend', industry: 'ETF', sector: 'ETF' },
+    { ticker: 'VOO', name: 'Vanguard S&P 500', industry: 'ETF', sector: 'ETF' },
+  ]
+  for (const s of stocks) {
+    await prisma.stock.upsert({
+      where: { ticker: s.ticker },
+      update: { name: s.name, industry: s.industry, sector: s.sector },
+      create: s,
+    })
+  }
+
+  // A published post tagged AAPL — the demo subscriber holds AAPL, so this
+  // should appear in their feed.
+  await prisma.analysisPost.create({
+    data: {
+      title: '애플 2025Q1 실적, 이번 분기엔 서비스 매출을 보라',
+      body: '## 핵심\n애플의 하드웨어 성장은 둔화됐지만, **서비스 부문**이 실적을 떠받치고 있습니다.\n\n- 서비스 매출 성장률과 마진 추이\n- 아이폰 교체 주기\n- 중국 매출 회복 여부\n\n이번 분기는 서비스 매출 비중이 어디까지 오르는지가 관전 포인트예요.',
+      lensType: 'earnings',
+      status: 'published',
+      themeTags: 'AI, 서비스매출',
+      authorId: admin.id,
+      publishedAt: new Date(),
+      stocks: { connect: [{ ticker: 'AAPL' }] },
+    },
+  })
+
+  console.log(`Seeded subscriber: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`)
+  console.log(`Seeded admin:      ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`)
 }
 
 main()

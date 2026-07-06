@@ -1,0 +1,51 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+import { PostEditor } from '@/components/admin/PostEditor'
+import type { LensTypeValue } from '@/lib/lens'
+
+export const dynamic = 'force-dynamic'
+
+export default async function EditPostPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const [post, stocks] = await Promise.all([
+    prisma.analysisPost.findUnique({
+      where: { id },
+      include: { stocks: { select: { id: true } } },
+    }),
+    prisma.stock.findMany({
+      orderBy: { ticker: 'asc' },
+      select: { id: true, ticker: true, name: true },
+    }),
+  ])
+  if (!post) notFound()
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <Link
+          href="/admin/posts"
+          className="text-sm text-muted transition hover:text-primary"
+        >
+          ← 분석글
+        </Link>
+        <h1 className="mt-2 text-2xl font-semibold text-primary">분석글 수정</h1>
+      </div>
+      <PostEditor
+        stocks={stocks}
+        initial={{
+          id: post.id,
+          title: post.title,
+          body: post.body,
+          lensType: post.lensType as LensTypeValue,
+          themeTags: post.themeTags ?? '',
+          stockIds: post.stocks.map((s) => s.id),
+        }}
+      />
+    </div>
+  )
+}

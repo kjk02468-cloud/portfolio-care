@@ -10,14 +10,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  SUBSCRIBER
+  ADMIN
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
   name         String?
   passwordHash String
+  role         UserRole     @default(SUBSCRIBER)
   createdAt    DateTime     @default(now())
   portfolios   Portfolio[]
   watchlist    WatchlistItem[]
+  posts        AnalysisPost[]
 }
 
 model Portfolio {
@@ -76,4 +83,53 @@ model WatchlistItem {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, symbol])
+}
+
+// ── JACK1 LENS: shared analysis skeleton ─────────────────────────────────────
+// The five "lenses" are NOT separate models/pages — they are the `lensType`
+// value on a single AnalysisPost. Lens-specific structured fields (lens_fields)
+// arrive in a later phase and are intentionally omitted here (Phase 0).
+
+// A tradeable instrument analysts tag posts with; ticker is the join key to a
+// subscriber's holdings (derived from their transactions).
+model Stock {
+  id        String         @id @default(cuid())
+  ticker    String         @unique
+  name      String
+  industry  String?
+  sector    String?
+  createdAt DateTime       @default(now())
+  posts     AnalysisPost[]
+}
+
+enum LensType {
+  earnings
+  valuechain
+  macro
+  news
+  financials
+}
+
+enum PostStatus {
+  draft
+  published
+}
+
+// The single unit of published analysis. `stocks` is the ticker_tags relation.
+model AnalysisPost {
+  id          String     @id @default(cuid())
+  title       String
+  body        String     // markdown
+  lensType    LensType
+  status      PostStatus @default(draft)
+  themeTags   String?    // comma-separated; browsing UI arrives in a later phase
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  stocks      Stock[]    // ticker_tags (many-to-many)
+
+  @@index([status, publishedAt])
+  @@index([lensType])
 }
