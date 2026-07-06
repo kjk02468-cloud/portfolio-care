@@ -20,34 +20,28 @@ function buildSlices(holdings: EnrichedHolding[]): Slice[] {
   const total = positive.reduce((s, h) => s + h.marketValue, 0)
   if (total <= 0) return []
 
-  const top = positive.slice(0, MAX_SLICES - 1)
-  const rest = positive.slice(MAX_SLICES - 1)
-
-  const slices: Slice[] = top.map((h, i) => ({
+  const named = (h: EnrichedHolding, i: number): Slice => ({
     symbol: h.symbol,
     value: h.marketValue,
     weight: h.marketValue / total,
     color: SERIES_COLORS[i % SERIES_COLORS.length],
-  }))
+  })
 
-  if (rest.length > 0) {
-    const restValue = rest.reduce((s, h) => s + h.marketValue, 0)
-    slices.push({
-      symbol: '기타',
-      value: restValue,
-      weight: restValue / total,
-      color: OTHER_COLOR,
-    })
-  } else if (positive.length <= MAX_SLICES && positive.length > MAX_SLICES - 1) {
-    // exactly MAX_SLICES holdings: include the last one directly
-    const last = positive[MAX_SLICES - 1]
-    slices.push({
-      symbol: last.symbol,
-      value: last.marketValue,
-      weight: last.marketValue / total,
-      color: SERIES_COLORS[(MAX_SLICES - 1) % SERIES_COLORS.length],
-    })
+  // Up to MAX_SLICES holdings are all shown by name; only a 9th+ holding gets
+  // folded into an "기타" bucket.
+  if (positive.length <= MAX_SLICES) {
+    return positive.map(named)
   }
+
+  const slices: Slice[] = positive.slice(0, MAX_SLICES - 1).map(named)
+  const rest = positive.slice(MAX_SLICES - 1)
+  const restValue = rest.reduce((s, h) => s + h.marketValue, 0)
+  slices.push({
+    symbol: '기타',
+    value: restValue,
+    weight: restValue / total,
+    color: OTHER_COLOR,
+  })
   return slices
 }
 

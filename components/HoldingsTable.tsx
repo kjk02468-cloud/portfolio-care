@@ -14,7 +14,12 @@ export function HoldingsTable({
   holdings: EnrichedHolding[]
   currency?: string
 }) {
-  if (holdings.length === 0) {
+  // Only show open positions. Fully-sold symbols (quantity 0) are kept upstream
+  // so their realized P&L still counts toward the summary, but they would render
+  // as confusing $0 rows here.
+  const open = holdings.filter((h) => h.quantity > 0)
+
+  if (open.length === 0) {
     return (
       <div className="card p-8 text-center text-secondary">
         아직 담은 종목이 없어요. 첫 거래를 추가하면 여기에 나타나요.
@@ -37,7 +42,7 @@ export function HoldingsTable({
           </tr>
         </thead>
         <tbody>
-          {holdings.map((h, i) => (
+          {open.map((h, i) => (
             <tr
               key={h.symbol}
               className="border-b border-border/60 last:border-0"
