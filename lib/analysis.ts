@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+import { LENS_TYPES, type LensTypeValue } from './lens'
 
 /** Distinct tickers a subscriber holds, derived from their transactions. */
 export async function getMyTickers(userId: string): Promise<string[]> {
@@ -26,29 +27,23 @@ function excerpt(body: string, len = 160): string {
   return text.length > len ? text.slice(0, len) + '…' : text
 }
 
-/**
- * The core product feed: published posts whose ticker_tags intersect the
- * subscriber's held tickers, newest first. Each tagged stock is flagged `held`
- * so the UI can highlight "이 분석이 네 OOO에 영향".
- */
-export async function getFeed(userId: string): Promise<FeedPost[]> {
-  const tickers = await getMyTickers(userId)
-  if (tickers.length === 0) return []
+const POST_INCLUDE = {
+  stocks: { select: { id: true, ticker: true, name: true } },
+  author: { select: { name: true } },
+} as const
 
-  const held = new Set(tickers)
-  const posts = await prisma.analysisPost.findMany({
-    where: {
-      status: 'published',
-      stocks: { some: { ticker: { in: tickers } } },
-    },
-    include: {
-      stocks: { select: { id: true, ticker: true, name: true } },
-      author: { select: { name: true } },
-    },
-    orderBy: { publishedAt: 'desc' },
-  })
+type PostRow = {
+  id: string
+  title: string
+  lensType: string
+  body: string
+  publishedAt: Date | null
+  author: { name: string | null }
+  stocks: { id: string; ticker: string; name: string }[]
+}
 
-  return posts.map((p) => ({
+function toFeedPost(p: PostRow, held: Set<string>): FeedPost {
+  return {
     id: p.id,
     title: p.title,
     lensType: p.lensType,
@@ -61,6 +56,92 @@ export async function getFeed(userId: string): Promise<FeedPost[]> {
       name: s.name,
       held: held.has(s.ticker.toUpperCase()),
     })),
+  }
+}
+
+/**
+ * The core product feed: published posts whose ticker_tags intersect the
+ * subscriber's held tickers, newest first. Optionally narrowed to one lens.
+ * Each tagged stock is flagged `held` so the UI can highlight the impact.
+ */
+export async function getFeed(
+  userId: string,
+  lens?: LensTypeValue,
+): Promise<FeedPost[]> {
+  const tickers = await getMyTickers(userId)
+  if (tickers.length === 0) return []
+
+  const held = new Set(tickers)
+  const posts = await prisma.analysisPost.findMany({
+    where: {
+      status: 'published',
+      ...(lens ? { lensType: lens } : {}),
+      stocks: { some: { ticker: { in: tickers } } },
+    },
+    include: POST_INCLUDE,
+    orderBy: { publishedAt: 'desc' },
+  })
+  return posts.map((p) => toFeedPost(p, held))
+}
+
+/**
+ * Lens browse: ALL published posts (optionally one lens), newest first, but
+ * posts tagged with a ticker the subscriber holds float to the top and are
+ * highlighted — "그중 내 보유 종목이 태그된 글은 상단/하이라이트".
+ */
+export async function getLensBrowse(
+  userId: string,
+  lens?: LensTypeValue,
+): Promise<FeedPost[]> {
+  const held = new Set(await getMyTickers(userId))
+  const posts = await prisma.analysisPost.findMany({
+    where: {
+      status: 'published',
+      ...(lens ? { lensType: lens } : {}),
+    },
+    include: POST_INCLUDE,
+    orderBy: { publishedAt: 'desc' },
+  })
+  const mapped = posts.map((p) => toFeedPost(p, held))
+  // Stable partition: held-tagged posts first, order within each group kept.
+  const mine = mapped.filter((p) => p.stocks.some((s) => s.held))
+  const rest = mapped.filter((p) => !p.stocks.some((s) => s.held))
+  return [...mine, ...rest]
+}
+
+export interface LensGroup {
+  lensType: string
+  posts: FeedPost[]
+}
+
+/**
+ * All published posts tagged with one ticker, grouped by lens — the "한 종목에
+ * 달린 5개 렌즈 분석을 렌즈별로 모아 보기" view on the stock detail page.
+ */
+export async function getStockPosts(
+  ticker: string,
+  userId: string,
+): Promise<LensGroup[]> {
+  const held = new Set(await getMyTickers(userId))
+  const posts = await prisma.analysisPost.findMany({
+    where: {
+      status: 'published',
+      stocks: { some: { ticker: ticker.toUpperCase() } },
+    },
+    include: POST_INCLUDE,
+    orderBy: { publishedAt: 'desc' },
+  })
+  const groups = new Map<string, FeedPost[]>()
+  for (const p of posts) {
+    const fp = toFeedPost(p, held)
+    const list = groups.get(fp.lensType) ?? []
+    list.push(fp)
+    groups.set(fp.lensType, list)
+  }
+  // Keep lens display order consistent with LENS_TYPES.
+  return LENS_TYPES.filter((l) => groups.has(l)).map((l) => ({
+    lensType: l,
+    posts: groups.get(l)!,
   }))
 }
 

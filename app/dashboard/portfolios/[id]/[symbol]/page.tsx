@@ -2,8 +2,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getHoldingDetail } from '@/lib/data'
+import { getStockPosts } from '@/lib/analysis'
+import { lensLabel } from '@/lib/lens'
 import { TransactionList } from '@/components/TransactionList'
 import { CostVsPriceBar } from '@/components/CostVsPriceBar'
+import { PostCard } from '@/components/PostCard'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
 import {
   formatCurrency,
@@ -55,6 +58,7 @@ export default async function HoldingDetailPage({
 
   const { portfolio, holding, quote, transactions, tradeSummary } = detail
   const currency = portfolio.baseCurrency
+  const lensGroups = await getStockPosts(detail.symbol, session.user.id)
   const name = holding?.name ?? transactions.find((t) => t.name)?.name ?? null
   const assetType = holding?.assetType ?? 'STOCK'
 
@@ -202,6 +206,34 @@ export default async function HoldingDetailPage({
               : '-'}
           </Stat>
         </dl>
+      </section>
+
+      {/* Analysis for this symbol, grouped by lens */}
+      <section className="space-y-4">
+        <h2 className="font-semibold text-primary">이 종목 분석</h2>
+        {lensGroups.length === 0 ? (
+          <div className="card p-8 text-center text-secondary">
+            아직 이 종목에 연결된 분석이 없어요.
+          </div>
+        ) : (
+          lensGroups.map((group) => (
+            <div key={group.lensType} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
+                  {lensLabel(group.lensType)}
+                </span>
+                <span className="text-xs text-muted">
+                  {group.posts.length}건
+                </span>
+              </div>
+              <div className="space-y-3">
+                {group.posts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </section>
 
       {/* Transactions for this symbol */}
