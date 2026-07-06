@@ -14,13 +14,18 @@ export const dynamic = 'force-dynamic'
 
 function Panel({
   title,
+  delay = 0,
   children,
 }: {
   title: string
+  delay?: number
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
+    <section
+      className="card animate-rise p-5"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <h2 className="mb-4 font-semibold text-primary">{title}</h2>
       {children}
     </section>
@@ -57,10 +62,10 @@ export default async function DashboardPage() {
       <SummaryCards summary={data.summary} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="자산 배분">
+        <Panel title="자산 배분" delay={80}>
           <AllocationPieChart holdings={data.holdings} />
         </Panel>
-        <Panel title="자산 추이">
+        <Panel title="자산 추이" delay={140}>
           <ValueTrendChart data={data.trend} />
         </Panel>
       </div>
@@ -70,16 +75,17 @@ export default async function DashboardPage() {
           <h2 className="font-semibold text-primary">포트폴리오</h2>
         </div>
         {data.portfolios.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-8 text-center text-secondary">
+          <div className="card p-8 text-center text-secondary">
             포트폴리오가 없습니다. 위의 버튼으로 추가하세요.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.portfolios.map((p) => (
+            {data.portfolios.map((p, i) => (
               <Link
                 key={p.id}
                 href={`/dashboard/portfolios/${p.id}`}
-                className="rounded-2xl border border-border bg-surface p-5 transition hover:border-brand/50 hover:bg-surface-2"
+                className="card card-interactive animate-rise p-5"
+                style={{ animationDelay: `${200 + i * 60}ms` }}
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-primary">{p.name}</h3>

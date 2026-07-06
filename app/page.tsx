@@ -83,10 +83,11 @@ export default async function HomePage() {
         </section>
 
         <section className="grid gap-4 pb-24 sm:grid-cols-2">
-          {features.map((f) => (
+          {features.map((f, i) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-border bg-surface p-6"
+              className="card card-interactive animate-rise p-6"
+              style={{ animationDelay: `${i * 80}ms` }}
             >
               <h3 className="mb-2 font-semibold text-primary">{f.title}</h3>
               <p className="text-sm text-secondary">{f.desc}</p>

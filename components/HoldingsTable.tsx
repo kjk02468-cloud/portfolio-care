@@ -16,14 +16,14 @@ export function HoldingsTable({
 }) {
   if (holdings.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center text-secondary">
+      <div className="card p-8 text-center text-secondary">
         아직 보유 종목이 없습니다. 거래를 추가하면 여기에 표시됩니다.
       </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+    <div className="card overflow-x-auto">
       <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-secondary">

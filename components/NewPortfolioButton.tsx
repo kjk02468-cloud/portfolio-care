@@ -50,7 +50,7 @@ export function NewPortfolioButton() {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-wrap items-end gap-2 rounded-2xl border border-border bg-surface p-4"
+      className="card flex flex-wrap items-end gap-2 p-4"
     >
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-secondary">

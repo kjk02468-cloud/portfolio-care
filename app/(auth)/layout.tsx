@@ -13,7 +13,7 @@ export default function AuthLayout({
         </span>
         <span className="text-lg font-semibold text-primary">Portfolio Care</span>
       </Link>
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+      <div className="card animate-rise w-full max-w-sm p-6 sm:p-8">
         {children}
       </div>
     </div>

@@ -28,14 +28,14 @@ export function TransactionList({
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center text-secondary">
+      <div className="card p-8 text-center text-secondary">
         아직 거래 내역이 없습니다.
       </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+    <div className="card overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-secondary">

@@ -83,10 +83,7 @@ export function TransactionForm({ portfolioId }: { portfolioId: string }) {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-2xl border border-border bg-surface p-5"
-    >
+    <form onSubmit={onSubmit} className="card animate-rise p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold text-primary">거래 추가</h3>
         <button

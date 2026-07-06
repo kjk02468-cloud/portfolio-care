@@ -48,7 +48,7 @@ export default async function PortfolioPage({
       <SummaryCards summary={view.summary} currency={currency} />
 
       {view.holdings.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="card animate-rise p-5" style={{ animationDelay: '80ms' }}>
           <h2 className="mb-4 font-semibold text-primary">자산 배분</h2>
           <AllocationPieChart holdings={view.holdings} currency={currency} />
         </section>
