@@ -56,7 +56,11 @@ export default async function PortfolioPage({
 
       <section className="space-y-3">
         <h2 className="font-semibold text-primary">보유 종목</h2>
-        <HoldingsTable holdings={view.holdings} currency={currency} />
+        <HoldingsTable
+          holdings={view.holdings}
+          currency={currency}
+          hrefFor={(s) => `/dashboard/portfolios/${view.id}/${s}`}
+        />
       </section>
 
       <section className="space-y-3">

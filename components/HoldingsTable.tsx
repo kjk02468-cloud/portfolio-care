@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { EnrichedHolding } from '@/lib/portfolio'
 import {
   formatCurrency,
@@ -10,9 +11,12 @@ import { SERIES_COLORS } from '@/lib/colors'
 export function HoldingsTable({
   holdings,
   currency = 'USD',
+  hrefFor,
 }: {
   holdings: EnrichedHolding[]
   currency?: string
+  /** When provided, each row's symbol links to this href (per-portfolio detail). */
+  hrefFor?: (symbol: string) => string
 }) {
   // Only show open positions. Fully-sold symbols (quantity 0) are kept upstream
   // so their realized P&L still counts toward the summary, but they would render
@@ -48,19 +52,42 @@ export function HoldingsTable({
               className="border-b border-border/60 last:border-0"
             >
               <td className="py-3 pl-5">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }}
-                    aria-hidden
-                  />
-                  <div>
-                    <div className="font-medium text-primary">{h.symbol}</div>
-                    {h.name && (
-                      <div className="text-xs text-muted">{h.name}</div>
-                    )}
-                  </div>
-                </div>
+                {(() => {
+                  const inner = (
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          background: SERIES_COLORS[i % SERIES_COLORS.length],
+                        }}
+                        aria-hidden
+                      />
+                      <div>
+                        <div className="flex items-center gap-1 font-medium text-primary">
+                          {h.symbol}
+                          {hrefFor && (
+                            <span className="text-muted" aria-hidden>
+                              ›
+                            </span>
+                          )}
+                        </div>
+                        {h.name && (
+                          <div className="text-xs text-muted">{h.name}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                  return hrefFor ? (
+                    <Link
+                      href={hrefFor(h.symbol)}
+                      className="-m-1 inline-block rounded-lg p-1 transition hover:bg-surface-2"
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    inner
+                  )
+                })()}
               </td>
               <Td>{formatNumber(h.quantity)}</Td>
               <Td>{formatCurrency(h.avgCost, currency)}</Td>

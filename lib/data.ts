@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { getQuotes } from './market'
+import { getQuotes, type Quote } from './market'
 import {
   computeHoldings,
   enrichHoldings,
@@ -131,4 +131,98 @@ export interface PortfolioTx {
   price: number
   fee: number
   tradedAt: string
+}
+
+export interface TradeSummary {
+  totalBought: number
+  totalSold: number
+  totalFees: number
+  buyCount: number
+  sellCount: number
+  firstTradeAt: string | null
+}
+
+export interface HoldingDetail {
+  portfolio: { id: string; name: string; baseCurrency: string }
+  symbol: string
+  holding: EnrichedHolding | null
+  quote: Quote | null
+  transactions: PortfolioTx[]
+  tradeSummary: TradeSummary
+}
+
+/**
+ * Load a single symbol's position within one portfolio: the enriched holding,
+ * the raw quote (for per-share day change), this symbol's transactions, and a
+ * derived buy/sell summary. Reuses the same aggregation path as the dashboard.
+ */
+export async function getHoldingDetail(
+  portfolioId: string,
+  symbolRaw: string,
+  userId: string,
+): Promise<HoldingDetail | null> {
+  const symbol = symbolRaw.toUpperCase()
+  const portfolio = await prisma.portfolio.findFirst({
+    where: { id: portfolioId, userId },
+    include: { transactions: { orderBy: { tradedAt: 'desc' } } },
+  })
+  if (!portfolio) return null
+
+  const symbolTxs = portfolio.transactions.filter(
+    (t) => t.symbol.toUpperCase() === symbol,
+  )
+  // No trades for this symbol in this portfolio → nothing to show.
+  if (symbolTxs.length === 0) return null
+
+  // Compute the whole portfolio so weight (share of total value) is correct,
+  // then pick out this symbol.
+  const baseHoldings = computeHoldings(portfolio.transactions)
+  const allSymbols = baseHoldings.map((b) => b.symbol)
+  const quotes = allSymbols.length ? await getQuotes(allSymbols) : {}
+  const { holdings } = enrichHoldings(baseHoldings, quotes)
+  const holding = holdings.find((h) => h.symbol === symbol) ?? null
+
+  const tradeSummary: TradeSummary = {
+    totalBought: 0,
+    totalSold: 0,
+    totalFees: 0,
+    buyCount: 0,
+    sellCount: 0,
+    firstTradeAt: null,
+  }
+  for (const t of symbolTxs) {
+    tradeSummary.totalFees += t.fee
+    if (t.side === 'BUY') {
+      tradeSummary.totalBought += t.quantity * t.price
+      tradeSummary.buyCount += 1
+    } else {
+      tradeSummary.totalSold += t.quantity * t.price
+      tradeSummary.sellCount += 1
+    }
+  }
+  // transactions come newest-first; the last one is the earliest trade.
+  const earliest = symbolTxs[symbolTxs.length - 1]
+  tradeSummary.firstTradeAt = earliest ? earliest.tradedAt.toISOString() : null
+
+  return {
+    portfolio: {
+      id: portfolio.id,
+      name: portfolio.name,
+      baseCurrency: portfolio.baseCurrency,
+    },
+    symbol,
+    holding,
+    quote: quotes[symbol] ?? null,
+    transactions: symbolTxs.map((t) => ({
+      id: t.id,
+      symbol: t.symbol,
+      name: t.name,
+      side: t.side,
+      quantity: t.quantity,
+      price: t.price,
+      fee: t.fee,
+      tradedAt: t.tradedAt.toISOString(),
+    })),
+    tradeSummary,
+  }
 }
