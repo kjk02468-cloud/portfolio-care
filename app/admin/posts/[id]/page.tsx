@@ -22,14 +22,21 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [post, stocks] = await Promise.all([
+  const [post, stocks, posts] = await Promise.all([
     prisma.analysisPost.findUnique({
       where: { id },
-      include: { stocks: { select: { id: true } } },
+      include: {
+        stocks: { select: { id: true } },
+        relatedTo: { select: { id: true } },
+      },
     }),
     prisma.stock.findMany({
       orderBy: { ticker: 'asc' },
       select: { id: true, ticker: true, name: true },
+    }),
+    prisma.analysisPost.findMany({
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, title: true, lensType: true },
     }),
   ])
   if (!post) notFound()
@@ -47,6 +54,7 @@ export default async function EditPostPage({
       </div>
       <PostEditor
         stocks={stocks}
+        relatedCandidates={posts}
         initial={{
           id: post.id,
           title: post.title,
@@ -55,6 +63,7 @@ export default async function EditPostPage({
           themeTags: post.themeTags ?? '',
           stockIds: post.stocks.map((s) => s.id),
           lensFields: parseInitialLensFields(post.lensFields),
+          relatedIds: post.relatedTo.map((r) => r.id),
         }}
       />
     </div>

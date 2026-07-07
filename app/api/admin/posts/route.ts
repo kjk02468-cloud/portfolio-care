@@ -27,7 +27,8 @@ export async function POST(req: Request) {
       { status: 400 },
     )
   }
-  const { title, body, lensType, status, themeTags, stockIds } = parsed.data
+  const { title, body, lensType, status, themeTags, stockIds, relatedIds } =
+    parsed.data
   const lensFields = parseLensFields(lensType, parsed.data.lensFields)
 
   const post = await prisma.analysisPost.create({
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
       authorId: admin.id,
       publishedAt: status === 'published' ? new Date() : null,
       stocks: { connect: stockIds.map((id) => ({ id })) },
+      relatedTo: { connect: relatedIds.map((id) => ({ id })) },
     },
   })
   return NextResponse.json({ post }, { status: 201 })

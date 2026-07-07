@@ -91,9 +91,9 @@ prisma/schema.prisma, prisma/seed.ts
 ## 로드맵 (분석 렌즈)
 
 - **Phase 0 (완료)** — 뼈대: Stock·AnalysisPost·종목 태그, 관리자 에디터, 구독자 피드
-- **Phase 1** — `lensType` 필터 탭, 종목 상세의 렌즈별 모아보기, 보유 하이라이트 고도화
-- **Phase 2** — 렌즈별 구조화 필드(`lens_fields`) 입력/표시
-- **Phase 3** — `related_posts` 상호 연계, 렌즈별 탐색 뷰
+- **Phase 1 (완료)** — `lensType` 필터 탭, 종목 상세의 렌즈별 모아보기, 내 종목/전체 스코프
+- **Phase 2 (완료)** — 렌즈별 구조화 필드(`lens_fields`) 입력/표시
+- **Phase 3 (완료)** — `related_posts` 상호 연계, 카드 렌즈 요약으로 렌즈별 탐색 강화
 
 ## 프로덕션 참고
 

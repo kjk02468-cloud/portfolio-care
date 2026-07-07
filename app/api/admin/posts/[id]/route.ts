@@ -18,7 +18,8 @@ export async function PATCH(req: Request, { params }: Params) {
       { status: 400 },
     )
   }
-  const { title, body, lensType, status, themeTags, stockIds } = parsed.data
+  const { title, body, lensType, status, themeTags, stockIds, relatedIds } =
+    parsed.data
   const lensFields = parseLensFields(lensType, parsed.data.lensFields)
 
   const existing = await prisma.analysisPost.findUnique({ where: { id } })
@@ -43,6 +44,10 @@ export async function PATCH(req: Request, { params }: Params) {
       lensFields: JSON.stringify(lensFields),
       publishedAt,
       stocks: { set: stockIds.map((sid) => ({ id: sid })) },
+      // Never relate a post to itself.
+      relatedTo: {
+        set: relatedIds.filter((r) => r !== id).map((r) => ({ id: r })),
+      },
     },
   })
   return NextResponse.json({ post })

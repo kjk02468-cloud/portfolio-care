@@ -90,7 +90,7 @@ async function main() {
 
   // A published post tagged AAPL — the demo subscriber holds AAPL, so this
   // should appear in their feed.
-  await prisma.analysisPost.create({
+  const earningsPost = await prisma.analysisPost.create({
     data: {
       title: '애플 이번 분기 실적, 서비스 매출을 보라',
       body: '## 핵심\n애플의 하드웨어 성장은 둔화됐지만, **서비스 부문**이 실적을 떠받치고 있습니다.\n\n- 서비스 매출 성장률과 마진 추이\n- 아이폰 교체 주기\n- 중국 매출 회복 여부\n\n이번 분기는 서비스 매출 비중이 어디까지 오르는지가 관전 포인트예요.\n\n> 시드 예시 글입니다. 실제 수치는 관리자가 입력합니다.',
@@ -129,6 +129,8 @@ async function main() {
       authorId: admin.id,
       publishedAt: new Date(),
       stocks: { connect: [{ ticker: 'NVDA' }] },
+      // Cross-lens linkage: relate to the earnings post.
+      relatedTo: { connect: [{ id: earningsPost.id }] },
     },
   })
 

@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { LENS_TYPES, type LensTypeValue } from './lens'
+import { summarizeLensFields } from './lens-fields'
 
 /** Distinct tickers a subscriber holds, derived from their transactions. */
 export async function getMyTickers(userId: string): Promise<string[]> {
@@ -19,6 +20,7 @@ export interface FeedPost {
   publishedAt: string | null
   authorName: string | null
   excerpt: string
+  lensSummary: string
   stocks: { id: string; ticker: string; name: string; held: boolean }[]
 }
 
@@ -37,9 +39,20 @@ type PostRow = {
   title: string
   lensType: string
   body: string
+  lensFields: string | null
   publishedAt: Date | null
   author: { name: string | null }
   stocks: { id: string; ticker: string; name: string }[]
+}
+
+function parseFields(raw: string | null): Record<string, unknown> {
+  if (!raw) return {}
+  try {
+    const v = JSON.parse(raw)
+    return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
 }
 
 function toFeedPost(p: PostRow, held: Set<string>): FeedPost {
@@ -50,6 +63,7 @@ function toFeedPost(p: PostRow, held: Set<string>): FeedPost {
     publishedAt: p.publishedAt?.toISOString() ?? null,
     authorName: p.author.name,
     excerpt: excerpt(p.body),
+    lensSummary: summarizeLensFields(p.lensType, parseFields(p.lensFields)),
     stocks: p.stocks.map((s) => ({
       id: s.id,
       ticker: s.ticker,
@@ -156,6 +170,7 @@ export interface PostDetail {
   authorName: string | null
   stocks: { id: string; ticker: string; name: string; held: boolean }[]
   heldTickers: string[]
+  related: { id: string; title: string; lensType: string }[]
 }
 
 function parseStoredLensFields(raw: string | null): Record<string, unknown> {
@@ -173,14 +188,24 @@ export async function getPostForSubscriber(
   postId: string,
   userId: string,
 ): Promise<PostDetail | null> {
+  const relatedSelect = {
+    where: { status: 'published' as const },
+    select: { id: true, title: true, lensType: true },
+  }
   const post = await prisma.analysisPost.findFirst({
     where: { id: postId, status: 'published' },
     include: {
       stocks: { select: { id: true, ticker: true, name: true } },
       author: { select: { name: true } },
+      relatedTo: relatedSelect,
+      relatedFrom: relatedSelect,
     },
   })
   if (!post) return null
+
+  // Mutual: union of both directions, deduped by id.
+  const relatedMap = new Map<string, { id: string; title: string; lensType: string }>()
+  for (const r of [...post.relatedTo, ...post.relatedFrom]) relatedMap.set(r.id, r)
 
   const held = new Set(await getMyTickers(userId))
   const stocks = post.stocks.map((s) => ({
@@ -204,5 +229,6 @@ export async function getPostForSubscriber(
     authorName: post.author.name,
     stocks,
     heldTickers: stocks.filter((s) => s.held).map((s) => s.ticker),
+    related: Array.from(relatedMap.values()),
   }
 }

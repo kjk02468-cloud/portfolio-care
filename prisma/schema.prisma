@@ -131,6 +131,11 @@ model AnalysisPost {
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   stocks      Stock[]    // ticker_tags (many-to-many)
 
+  // related_posts — self many-to-many for cross-lens linkage. Shown mutually in
+  // the UI (union of both directions).
+  relatedTo   AnalysisPost[] @relation("PostRelations")
+  relatedFrom AnalysisPost[] @relation("PostRelations")
+
   @@index([status, publishedAt])
   @@index([lensType])
 }

@@ -80,6 +80,27 @@ export default async function PostPage({
         <PostBody>{post.body}</PostBody>
       </div>
 
+      {post.related.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-primary">관련 분석</h2>
+          <div className="card divide-y divide-border">
+            {post.related.map((r) => (
+              <Link
+                key={r.id}
+                href={`/dashboard/feed/${r.id}`}
+                className="flex items-center gap-2.5 p-3 text-sm transition hover:bg-surface-2"
+              >
+                <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
+                  {lensLabel(r.lensType)}
+                </span>
+                <span className="truncate text-primary">{r.title}</span>
+                <span className="ml-auto shrink-0 text-muted">›</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {post.themeTags.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
           테마:

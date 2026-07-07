@@ -86,3 +86,26 @@ export const STRENGTH_LABELS: Record<string, string> = {
   medium: '중',
   weak: '약',
 }
+
+/** A one-line summary of the lens fields for feed cards (empty if nothing set). */
+export function summarizeLensFields(
+  lensType: string,
+  f: Record<string, unknown>,
+): string {
+  const s = (k: string) => (typeof f[k] === 'string' ? (f[k] as string) : '')
+  const parts: string[] = []
+  if (lensType === 'earnings') {
+    if (s('quarter')) parts.push(s('quarter'))
+    if (s('surprise')) parts.push(SURPRISE_LABELS[s('surprise')] ?? s('surprise'))
+  } else if (lensType === 'valuechain') {
+    if (s('industry')) parts.push(s('industry'))
+    if (s('bottleneckStep')) parts.push(`병목: ${s('bottleneckStep')}`)
+  } else if (lensType === 'macro') {
+    if (s('direction')) parts.push(`방향: ${s('direction')}`)
+  } else if (lensType === 'news') {
+    if (s('impactDirection'))
+      parts.push(IMPACT_LABELS[s('impactDirection')] ?? s('impactDirection'))
+    if (s('strength')) parts.push(STRENGTH_LABELS[s('strength')] ?? s('strength'))
+  }
+  return parts.join(' · ')
+}

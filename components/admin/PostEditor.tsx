@@ -2,13 +2,24 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LENS_TYPES, LENS_LABELS, type LensTypeValue } from '@/lib/lens'
+import {
+  LENS_TYPES,
+  LENS_LABELS,
+  lensLabel,
+  type LensTypeValue,
+} from '@/lib/lens'
 import { LensFieldsEditor } from './LensFieldsEditor'
 
 interface StockOption {
   id: string
   ticker: string
   name: string
+}
+
+interface PostOption {
+  id: string
+  title: string
+  lensType: string
 }
 
 export interface PostEditorInitial {
@@ -19,6 +30,7 @@ export interface PostEditorInitial {
   themeTags: string
   stockIds: string[]
   lensFields: Record<string, unknown>
+  relatedIds: string[]
 }
 
 const inputCls =
@@ -26,9 +38,11 @@ const inputCls =
 
 export function PostEditor({
   stocks,
+  relatedCandidates = [],
   initial,
 }: {
   stocks: StockOption[]
+  relatedCandidates?: PostOption[]
   initial?: PostEditorInitial
 }) {
   const router = useRouter()
@@ -41,6 +55,9 @@ export function PostEditor({
   const [stockIds, setStockIds] = useState<string[]>(initial?.stockIds ?? [])
   const [lensFields, setLensFields] = useState<Record<string, unknown>>(
     initial?.lensFields ?? {},
+  )
+  const [relatedIds, setRelatedIds] = useState<string[]>(
+    initial?.relatedIds ?? [],
   )
   const [filter, setFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +77,14 @@ export function PostEditor({
     )
   }
 
+  function toggleRelated(id: string) {
+    setRelatedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
+  const candidates = relatedCandidates.filter((p) => p.id !== initial?.id)
+
   async function save(status: 'draft' | 'published') {
     setError(null)
     setLoading(true)
@@ -72,6 +97,7 @@ export function PostEditor({
         themeTags,
         stockIds,
         lensFields,
+        relatedIds,
       }
       const res = await fetch(
         initial ? `/api/admin/posts/${initial.id}` : '/api/admin/posts',
@@ -194,6 +220,33 @@ export function PostEditor({
         value={lensFields}
         onChange={setLensFields}
       />
+
+      {/* related_posts */}
+      {candidates.length > 0 && (
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-secondary">
+            관련 분석글 (선택)
+          </span>
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-border">
+            {candidates.map((p) => (
+              <label
+                key={p.id}
+                className="flex cursor-pointer items-center gap-2.5 border-b border-border/60 px-3 py-2 text-sm last:border-0 hover:bg-surface-2"
+              >
+                <input
+                  type="checkbox"
+                  checked={relatedIds.includes(p.id)}
+                  onChange={() => toggleRelated(p.id)}
+                />
+                <span className="shrink-0 rounded bg-surface-2 px-1.5 py-0.5 text-xs text-secondary">
+                  {lensLabel(p.lensType)}
+                </span>
+                <span className="truncate text-primary">{p.title}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-secondary">

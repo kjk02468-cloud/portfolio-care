@@ -27,6 +27,9 @@ export function PostCard({
         )}
       </div>
       <h2 className="font-semibold text-primary">{post.title}</h2>
+      {post.lensSummary && (
+        <p className="mt-1 text-xs font-medium text-brand">{post.lensSummary}</p>
+      )}
       <p className="mt-1 line-clamp-2 text-sm text-secondary">{post.excerpt}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {post.stocks.map((s) => (
