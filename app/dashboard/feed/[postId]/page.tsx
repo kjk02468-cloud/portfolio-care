@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { getPostForSubscriber } from '@/lib/analysis'
 import { lensLabel } from '@/lib/lens'
 import { PostBody } from '@/components/PostBody'
+import { LensFieldsView } from '@/components/LensFieldsView'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +55,9 @@ export default async function PostPage({
           </p>
         </div>
       )}
+
+      {/* lens_fields — structured per-lens details */}
+      <LensFieldsView lensType={post.lensType} fields={post.lensFields} />
 
       {/* ticker_tags */}
       {post.stocks.length > 0 && (

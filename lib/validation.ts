@@ -15,6 +15,8 @@ export const postSchema = z.object({
   status: z.enum(['draft', 'published']).default('draft'),
   themeTags: z.string().trim().max(300).optional().or(z.literal('')),
   stockIds: z.array(z.string().min(1)).default([]),
+  // Raw per-lens fields; validated against the lens-specific schema in the API.
+  lensFields: z.any().optional(),
 })
 
 export type StockInput = z.infer<typeof stockSchema>

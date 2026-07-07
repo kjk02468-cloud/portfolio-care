@@ -92,14 +92,43 @@ async function main() {
   // should appear in their feed.
   await prisma.analysisPost.create({
     data: {
-      title: '애플 2025Q1 실적, 이번 분기엔 서비스 매출을 보라',
-      body: '## 핵심\n애플의 하드웨어 성장은 둔화됐지만, **서비스 부문**이 실적을 떠받치고 있습니다.\n\n- 서비스 매출 성장률과 마진 추이\n- 아이폰 교체 주기\n- 중국 매출 회복 여부\n\n이번 분기는 서비스 매출 비중이 어디까지 오르는지가 관전 포인트예요.',
+      title: '애플 이번 분기 실적, 서비스 매출을 보라',
+      body: '## 핵심\n애플의 하드웨어 성장은 둔화됐지만, **서비스 부문**이 실적을 떠받치고 있습니다.\n\n- 서비스 매출 성장률과 마진 추이\n- 아이폰 교체 주기\n- 중국 매출 회복 여부\n\n이번 분기는 서비스 매출 비중이 어디까지 오르는지가 관전 포인트예요.\n\n> 시드 예시 글입니다. 실제 수치는 관리자가 입력합니다.',
       lensType: 'earnings',
       status: 'published',
       themeTags: 'AI, 서비스매출',
+      lensFields: JSON.stringify({
+        quarter: '2026 회계연도 3분기 (예시)',
+        surprise: 'beat',
+        keyMetrics: [
+          { key: '서비스 매출', value: '전년比 두 자릿수 성장 (예시)' },
+          { key: '총마진', value: '46% 내외 (예시)' },
+        ],
+      }),
       authorId: admin.id,
       publishedAt: new Date(),
       stocks: { connect: [{ ticker: 'AAPL' }] },
+    },
+  })
+
+  // Valuechain example — makes "어느 산업 / 어느 단계가 병목" explicit.
+  await prisma.analysisPost.create({
+    data: {
+      title: 'AI 반도체 밸류체인, 어디가 병목인가',
+      body: '## 병목\nAI 가속기 수요가 폭발하면서 밸류체인 상의 특정 단계에 병목이 생기고 있습니다.\nNVDA의 출하량은 결국 이 병목 단계의 캐파에 좌우됩니다.\n\n> 시드 예시 글입니다.',
+      lensType: 'valuechain',
+      status: 'published',
+      themeTags: 'HBM, AI, 반도체',
+      lensFields: JSON.stringify({
+        industry: 'AI 반도체',
+        chainSteps: ['설계(NVDA)', '파운드리(TSMC)', 'HBM(메모리)', 'CoWoS 패키징'],
+        bottleneckStep: 'CoWoS 패키징',
+        capitalConcentration:
+          '선단 패키징 캐파에 투자가 집중되고 있으며, 증설 리드타임이 길어 단기 병목이 지속될 전망 (예시).',
+      }),
+      authorId: admin.id,
+      publishedAt: new Date(),
+      stocks: { connect: [{ ticker: 'NVDA' }] },
     },
   })
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LENS_TYPES, LENS_LABELS, type LensTypeValue } from '@/lib/lens'
+import { LensFieldsEditor } from './LensFieldsEditor'
 
 interface StockOption {
   id: string
@@ -17,6 +18,7 @@ export interface PostEditorInitial {
   lensType: LensTypeValue
   themeTags: string
   stockIds: string[]
+  lensFields: Record<string, unknown>
 }
 
 const inputCls =
@@ -37,6 +39,9 @@ export function PostEditor({
   )
   const [themeTags, setThemeTags] = useState(initial?.themeTags ?? '')
   const [stockIds, setStockIds] = useState<string[]>(initial?.stockIds ?? [])
+  const [lensFields, setLensFields] = useState<Record<string, unknown>>(
+    initial?.lensFields ?? {},
+  )
   const [filter, setFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -59,7 +64,15 @@ export function PostEditor({
     setError(null)
     setLoading(true)
     try {
-      const payload = { title, body, lensType, status, themeTags, stockIds }
+      const payload = {
+        title,
+        body,
+        lensType,
+        status,
+        themeTags,
+        stockIds,
+        lensFields,
+      }
       const res = await fetch(
         initial ? `/api/admin/posts/${initial.id}` : '/api/admin/posts',
         {
@@ -175,6 +188,12 @@ export function PostEditor({
           )}
         </div>
       </div>
+
+      <LensFieldsEditor
+        lensType={lensType}
+        value={lensFields}
+        onChange={setLensFields}
+      />
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-secondary">

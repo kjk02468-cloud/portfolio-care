@@ -151,10 +151,21 @@ export interface PostDetail {
   body: string
   lensType: string
   themeTags: string[]
+  lensFields: Record<string, unknown>
   publishedAt: string | null
   authorName: string | null
   stocks: { id: string; ticker: string; name: string; held: boolean }[]
   heldTickers: string[]
+}
+
+function parseStoredLensFields(raw: string | null): Record<string, unknown> {
+  if (!raw) return {}
+  try {
+    const v = JSON.parse(raw)
+    return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
 }
 
 /** A single published post for subscribers, with held-ticker highlighting. */
@@ -188,6 +199,7 @@ export async function getPostForSubscriber(
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean),
+    lensFields: parseStoredLensFields(post.lensFields),
     publishedAt: post.publishedAt?.toISOString() ?? null,
     authorName: post.author.name,
     stocks,

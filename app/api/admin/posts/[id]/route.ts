@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth-guards'
 import { prisma } from '@/lib/prisma'
 import { postSchema } from '@/lib/validation'
+import { parseLensFields } from '@/lib/lens-fields'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -18,6 +19,7 @@ export async function PATCH(req: Request, { params }: Params) {
     )
   }
   const { title, body, lensType, status, themeTags, stockIds } = parsed.data
+  const lensFields = parseLensFields(lensType, parsed.data.lensFields)
 
   const existing = await prisma.analysisPost.findUnique({ where: { id } })
   if (!existing) {
@@ -38,6 +40,7 @@ export async function PATCH(req: Request, { params }: Params) {
       lensType,
       status,
       themeTags: themeTags || null,
+      lensFields: JSON.stringify(lensFields),
       publishedAt,
       stocks: { set: stockIds.map((sid) => ({ id: sid })) },
     },

@@ -123,6 +123,7 @@ model AnalysisPost {
   lensType    LensType
   status      PostStatus @default(draft)
   themeTags   String?    // comma-separated; browsing UI arrives in a later phase
+  lensFields  String?    // JSON-encoded per-lens structured fields (Phase 2)
   authorId    String
   publishedAt DateTime?
   createdAt   DateTime   @default(now())

@@ -6,6 +6,16 @@ import type { LensTypeValue } from '@/lib/lens'
 
 export const dynamic = 'force-dynamic'
 
+function parseInitialLensFields(raw: string | null): Record<string, unknown> {
+  if (!raw) return {}
+  try {
+    const v = JSON.parse(raw)
+    return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
+}
+
 export default async function EditPostPage({
   params,
 }: {
@@ -44,6 +54,7 @@ export default async function EditPostPage({
           lensType: post.lensType as LensTypeValue,
           themeTags: post.themeTags ?? '',
           stockIds: post.stocks.map((s) => s.id),
+          lensFields: parseInitialLensFields(post.lensFields),
         }}
       />
     </div>

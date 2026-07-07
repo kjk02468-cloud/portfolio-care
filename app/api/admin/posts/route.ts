@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth-guards'
 import { prisma } from '@/lib/prisma'
 import { postSchema } from '@/lib/validation'
+import { parseLensFields } from '@/lib/lens-fields'
 
 export async function GET() {
   if (!(await requireAdmin())) {
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     )
   }
   const { title, body, lensType, status, themeTags, stockIds } = parsed.data
+  const lensFields = parseLensFields(lensType, parsed.data.lensFields)
 
   const post = await prisma.analysisPost.create({
     data: {
@@ -35,6 +37,7 @@ export async function POST(req: Request) {
       lensType,
       status,
       themeTags: themeTags || null,
+      lensFields: JSON.stringify(lensFields),
       authorId: admin.id,
       publishedAt: status === 'published' ? new Date() : null,
       stocks: { connect: stockIds.map((id) => ({ id })) },
