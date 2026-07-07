@@ -95,6 +95,17 @@ prisma/schema.prisma, prisma/seed.ts
 - **Phase 2 (완료)** — 렌즈별 구조화 필드(`lens_fields`) 입력/표시
 - **Phase 3 (완료)** — `related_posts` 상호 연계, 카드 렌즈 요약으로 렌즈별 탐색 강화
 
+## 배포 (브라우저로 접속)
+
+브라우저에서 URL로 접속하려면 서버를 호스팅해야 합니다. 방법별 단계는
+**[DEPLOY.md](./DEPLOY.md)** 참고:
+
+- **Docker** — `docker build -t portfolio-care . && docker run -p 3000:3000 …` (이식성 최고)
+- **Fly.io** — SQLite 유지 + 영구 볼륨으로 공개 URL
+- **Vercel + Neon(Postgres)** — 무료 서버리스 (DB만 Postgres로 교체)
+
+컨테이너는 시작 시 `prisma migrate deploy`로 스키마를 적용한 뒤 `next start`로 서빙합니다.
+
 ## 프로덕션 참고
 
 - SQLite → Postgres 전환: `prisma/schema.prisma`의 `datasource` provider/URL 변경
