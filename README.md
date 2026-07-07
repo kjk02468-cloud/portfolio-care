@@ -26,7 +26,7 @@
 | 프레임워크 | Next.js 16 (App Router) + TypeScript |
 | 스타일 | Tailwind CSS v4 |
 | 인증 | Auth.js (NextAuth v5) + bcrypt |
-| DB | Prisma ORM + SQLite (개발) |
+| DB | Prisma ORM + Postgres (Neon 등) |
 | 차트 | Recharts |
 | 마크다운 | react-markdown |
 | 검증 | Zod |
@@ -35,8 +35,8 @@
 
 ```bash
 npm install                 # 의존성 설치 (+ prisma generate)
-cp .env.example .env        # 환경변수 준비 후 AUTH_SECRET 채우기
-npx prisma migrate dev      # DB 스키마 적용
+cp .env.example .env        # DATABASE_URL(Postgres)·AUTH_SECRET 채우기 (Neon 무료 DB 사용 가능)
+npx prisma migrate deploy   # DB 스키마 적용
 npm run db:seed             # (선택) 데모 데이터 생성
 npm run dev                 # http://localhost:3000
 ```
@@ -100,13 +100,12 @@ prisma/schema.prisma, prisma/seed.ts
 브라우저에서 URL로 접속하려면 서버를 호스팅해야 합니다. 방법별 단계는
 **[DEPLOY.md](./DEPLOY.md)** 참고:
 
-- **Docker** — `docker build -t portfolio-care . && docker run -p 3000:3000 …` (이식성 최고)
-- **Fly.io** — SQLite 유지 + 영구 볼륨으로 공개 URL
-- **Vercel + Neon(Postgres)** — 무료 서버리스 (DB만 Postgres로 교체)
+- **Vercel + Neon(Postgres)** — 무료 서버리스. 저장소 Import → env 3개 → Deploy
+- **Docker** — `docker build -t portfolio-care . && docker run -p 3000:3000 …` (어디서든)
 
-컨테이너는 시작 시 `prisma migrate deploy`로 스키마를 적용한 뒤 `next start`로 서빙합니다.
+컨테이너/배포는 시작 시 `prisma migrate deploy`로 스키마를 적용한 뒤 `next start`로 서빙합니다.
 
 ## 프로덕션 참고
 
-- SQLite → Postgres 전환: `prisma/schema.prisma`의 `datasource` provider/URL 변경
-- 배포 시 `AUTH_URL`(사이트 URL)과 강력한 `AUTH_SECRET` 설정
+- DB는 Postgres(Neon 등). 배포 시 `AUTH_URL`(사이트 URL)과 강력한 `AUTH_SECRET` 설정
+- Vercel Build Command: `npx prisma migrate deploy && next build`

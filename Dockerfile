@@ -1,7 +1,10 @@
-# Portfolio Care — production container (Next.js + Prisma/SQLite)
+# Portfolio Care — production container (Next.js + Prisma/Postgres)
 # Build:  docker build -t portfolio-care .
-# Run:    docker run -p 3000:3000 -e AUTH_SECRET=... -v pc-data:/data \
-#           -e DATABASE_URL=file:/data/prod.db portfolio-care
+# Run:    docker run -p 3000:3000 \
+#           -e DATABASE_URL="postgresql://USER:PASS@HOST/DB?sslmode=require" \
+#           -e AUTH_SECRET="$(openssl rand -base64 32)" \
+#           -e AUTH_URL="http://localhost:3000" \
+#           portfolio-care
 # Then open http://localhost:3000
 
 FROM node:22-slim AS base
@@ -22,23 +25,20 @@ RUN npm ci
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# A dummy URL keeps any build-time Prisma validation happy; no DB is touched.
-ENV DATABASE_URL="file:./build.db"
+# A dummy URL satisfies any build-time reference; no DB is contacted at build.
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npm run build
 
 # ── runner: serve ──
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
-# Default DB path; mount a volume at /data in production to persist it.
-ENV DATABASE_URL="file:/data/prod.db"
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/next.config.ts ./next.config.ts
 COPY --from=build /app/prisma ./prisma
-RUN mkdir -p /data
 EXPOSE 3000
-# Apply migrations at startup (when the volume is mounted), then serve.
+# Apply migrations at startup, then serve. DATABASE_URL must be provided.
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]

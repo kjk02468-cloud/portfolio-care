@@ -44,3 +44,6 @@ next-env.d.ts
 *.db
 *.db-journal
 prisma/dev.db*
+
+# keep the example env committed
+!.env.example
