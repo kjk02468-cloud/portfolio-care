@@ -28,24 +28,26 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-5">
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-fg font-bold">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand text-brand-fg font-bold">
             P
           </span>
-          <span className="text-lg font-semibold text-primary">Portfolio Care</span>
+          <span className="hidden whitespace-nowrap text-lg font-semibold text-primary sm:inline">
+            Portfolio Care
+          </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <ThemeToggle />
           <Link
             href="/login"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-secondary hover:text-primary"
+            className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-secondary hover:text-primary"
           >
             로그인
           </Link>
           <Link
             href="/register"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg transition hover:bg-brand-strong"
+            className="whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg transition hover:bg-brand-strong"
           >
             시작하기
           </Link>

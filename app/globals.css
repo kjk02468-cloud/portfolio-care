@@ -87,6 +87,9 @@ body {
   background: var(--plane);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  /* Korean reads far better breaking at word (어절) boundaries, not mid-word. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* Avoid a flash: default border color uses the token. */
