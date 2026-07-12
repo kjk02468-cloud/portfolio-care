@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/* Class-based dark mode: `.dark` on <html> flips the theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens (from the validated data-viz reference palette so the UI and the
+ * charts read as one system). Values are swapped in one place for light/dark.
+ */
+:root {
+  /* Minimal-fintech (Toss-style) neutrals: near-white cards on a soft grey plane. */
+  --plane: #f2f4f6;
+  --surface: #ffffff;
+  --surface-2: #f2f4f6;
+  --border: rgba(17, 24, 39, 0.06);
+  --text-primary: #191f28;
+  --text-secondary: #4e5968;
+  --text-muted: #8b95a1;
+  --brand: #3182f6;
+  --brand-strong: #2272eb;
+  --brand-fg: #ffffff;
+  --gain: #006300;
+  --loss: #d03b3b;
+  /* Soft, layered card shadow — the fintech look leans on shadow, not borders. */
+  --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 4px 16px rgba(17, 24, 39, 0.05);
+  --shadow-card-hover: 0 2px 4px rgba(17, 24, 39, 0.06), 0 12px 28px rgba(17, 24, 39, 0.1);
+
+  /* Categorical series palette (validated, fixed order) — light steps. */
+  --series-1: #3182f6;
+  --series-2: #1baf7a;
+  --series-3: #eda100;
+  --series-4: #008300;
+  --series-5: #4a3aa7;
+  --series-6: #e34948;
+  --series-7: #e87ba4;
+  --series-8: #eb6834;
+}
+
+.dark {
+  --plane: #0b0c0e;
+  --surface: #17181c;
+  --surface-2: #1f2127;
+  --border: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #b0b8c1;
+  --text-muted: #6b7684;
+  --brand: #4593fc;
+  --brand-strong: #4593fc;
+  --brand-fg: #0b0c0e;
+  --gain: #0ca30c;
+  --loss: #e66767;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.5);
+
+  /* Dark steps of the same eight hues, stepped for the dark surface. */
+  --series-1: #4593fc;
+  --series-2: #199e70;
+  --series-3: #c98500;
+  --series-4: #008300;
+  --series-5: #9085e9;
+  --series-6: #e66767;
+  --series-7: #d55181;
+  --series-8: #d95926;
+}
+
+@theme inline {
+  --color-plane: var(--plane);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-fg: var(--brand-fg);
+  --color-gain: var(--gain);
+  --color-loss: var(--loss);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  /* Korean reads far better breaking at word (어절) boundaries, not mid-word. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Avoid a flash: default border color uses the token. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+}
+
+/*
+ * Minimal-fintech surface + subtle motion.
+ * `.card` is the soft-shadow panel; `.card-interactive` adds a gentle lift on
+ * hover; `.animate-rise` fades content up on mount (staggered via inline delay).
+ * All motion is disabled under prefers-reduced-motion.
+ */
+@layer components {
+  .card {
+    background: var(--surface);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-card);
+  }
+  .card-interactive {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  }
+  .card-interactive:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  opacity: 0;
+  animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive,
+  .animate-rise {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Stage-3 badge (amber from the series palette; no direct Tailwind token). */
+.stage-badge-3 {
+  background: color-mix(in srgb, var(--series-3) 15%, transparent);
+  color: var(--series-3);
+}
+
+/* Rendered markdown for analysis post bodies. */
+.markdown {
+  line-height: 1.7;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.4em 0 0.5em;
+  line-height: 1.3;
+}
+.markdown h1 { font-size: 1.5rem; }
+.markdown h2 { font-size: 1.25rem; }
+.markdown h3 { font-size: 1.1rem; }
+.markdown p { margin: 0.75em 0; color: var(--text-secondary); }
+.markdown strong { color: var(--text-primary); font-weight: 600; }
+.markdown ul,
+.markdown ol { margin: 0.75em 0; padding-left: 1.4em; color: var(--text-secondary); }
+.markdown li { margin: 0.3em 0; }
+.markdown ul { list-style: disc; }
+.markdown ol { list-style: decimal; }
+.markdown a { color: var(--brand); text-decoration: underline; }
+.markdown blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: var(--text-muted);
+}
+.markdown code {
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+.markdown pre {
+  background: var(--surface-2);
+  border-radius: 0.75rem;
+  padding: 0.9em 1em;
+  margin: 0.75em 0;
+  overflow-x: auto;
+}
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+.markdown del { color: var(--text-muted); }
+/* GFM tables — wide ones scroll inside the card, not the page. */
+.markdown table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.9em 0;
+  font-size: 0.875rem;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown th {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.markdown td { color: var(--text-secondary); }
+.markdown :first-child { margin-top: 0; }

@@ -1,0 +1,151 @@
+// Prisma schema for the portfolio management dashboard.
+// SQLite for local development; swap `provider`/`url` for Postgres in production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUBSCRIBER
+  ADMIN
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  role         UserRole     @default(SUBSCRIBER)
+  createdAt    DateTime     @default(now())
+  portfolios   Portfolio[]
+  watchlist    WatchlistItem[]
+  posts        AnalysisPost[]
+}
+
+model Portfolio {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  baseCurrency String        @default("USD")
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  snapshots    Snapshot[]
+
+  @@index([userId])
+}
+
+enum TransactionSide {
+  BUY
+  SELL
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  portfolioId String
+  symbol      String
+  name        String?
+  assetType   String          @default("STOCK")
+  side        TransactionSide @default(BUY)
+  quantity    Float
+  price       Float
+  fee         Float           @default(0)
+  tradedAt    DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  portfolio   Portfolio       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([symbol])
+}
+
+// Periodic total-value snapshots used to render the portfolio value trend chart.
+model Snapshot {
+  id          String    @id @default(cuid())
+  portfolioId String
+  totalValue  Float
+  totalCost   Float
+  takenAt     DateTime  @default(now())
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  symbol    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+}
+
+// ── JACK1 LENS: shared analysis skeleton ─────────────────────────────────────
+// The five "lenses" are NOT separate models/pages — they are the `lensType`
+// value on a single AnalysisPost. Lens-specific structured fields (lens_fields)
+// arrive in a later phase and are intentionally omitted here (Phase 0).
+
+// A tradeable instrument analysts tag posts with; ticker is the join key to a
+// subscriber's holdings (derived from their transactions).
+model Stock {
+  id        String         @id @default(cuid())
+  ticker    String         @unique
+  name      String
+  industry  String?
+  sector    String?
+  createdAt DateTime       @default(now())
+  posts     AnalysisPost[]
+
+  // ── 투자 매뉴얼 v4.1 판정 입력 (G값). stage는 저장하지 않고 결정트리로 파생 ──
+  g1             Int?      // 수요 통과 0|1 (null=미판정)
+  g2             Int?      // 수익성 통과 0|1
+  g3s            Int?      // G3 모멘텀 레벨 0~4 (연속 분기 수 아님, §A.2)
+  g4             Int?      // 0=과열(고점 부근), 1=여유(충분히 조정)
+  kill           Boolean   @default(false) // 킬라인 발화 (① 즉시 이탈)
+  stageNote      String?   // 최근 판정 근거 1줄
+  stageUpdatedAt DateTime?
+}
+
+enum LensType {
+  earnings
+  valuechain
+  macro
+  news
+  financials
+}
+
+enum PostStatus {
+  draft
+  published
+}
+
+// The single unit of published analysis. `stocks` is the ticker_tags relation.
+model AnalysisPost {
+  id          String     @id @default(cuid())
+  title       String
+  body        String     // markdown
+  lensType    LensType
+  status      PostStatus @default(draft)
+  themeTags   String?    // comma-separated; browsing UI arrives in a later phase
+  lensFields  String?    // JSON-encoded per-lens structured fields (Phase 2)
+  stageUpdates String?   // JSON: per-ticker G updates applied at first publish (audit)
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  stocks      Stock[]    // ticker_tags (many-to-many)
+
+  // related_posts — self many-to-many for cross-lens linkage. Shown mutually in
+  // the UI (union of both directions).
+  relatedTo   AnalysisPost[] @relation("PostRelations")
+  relatedFrom AnalysisPost[] @relation("PostRelations")
+
+  @@index([status, publishedAt])
+  @@index([lensType])
+}
