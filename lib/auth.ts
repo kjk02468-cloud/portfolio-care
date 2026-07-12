@@ -4,12 +4,16 @@ import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 import { loginSchema } from './validation'
 
-// ADMIN_EMAILS(쉼표 구분)에 있는 이메일은 로그인 시 자동으로 ADMIN으로 승격.
-// SQL을 직접 만지지 않고 관리자 계정을 지정하기 위한 부트스트랩 경로.
+// 지정된 이메일은 로그인 시 자동으로 ADMIN으로 승격 (SQL 없이 관리자 지정).
+// 소스: 코드 기본값(DEFAULT_ADMIN_EMAILS) ∪ ADMIN_EMAILS 환경변수(쉼표 구분).
+// 환경변수를 못 넣는 상황을 위해 기본값을 코드에 둔다. 공개 저장소면 이메일이
+// 노출되므로, 관리자 변경 시 이 목록 대신 ADMIN_EMAILS 환경변수를 쓰는 걸 권장.
+const DEFAULT_ADMIN_EMAILS = ['kjk02468@naver.com']
+
 function adminEmailSet(): Set<string> {
+  const fromEnv = (process.env.ADMIN_EMAILS ?? '').split(',')
   return new Set(
-    (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
+    [...DEFAULT_ADMIN_EMAILS, ...fromEnv]
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean),
   )
