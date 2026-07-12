@@ -45,6 +45,19 @@ export interface PostEditorInitial {
 const inputCls =
   'w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/30'
 
+// 발행 전 체크리스트 (보고서 작성 매뉴얼 §8) — 강제는 아니고 스스로 점검용.
+const PREPUBLISH_CHECKLIST = [
+  '기준일과 데이터 기준 시각이 본문에 있다.',
+  '한 줄 요약에 긍정 요인과 제한 요인이 모두 있다.',
+  '각 숫자에 출처·기간·단위가 있다.',
+  '컨센서스 변화의 원인·추정치 수·갱신일을 공개했다.',
+  '가격 위치·밸류에이션·시장 위험을 분리했다.',
+  '리스크가 측정 가능한 반증 조건으로 작성됐다.',
+  '단계 변경 사유와 다음 점검일이 있다.',
+  '개인화된 매매 지시나 수익 보장 표현이 없다.',
+  "데이터 부족은 해당 G값을 비워 '판정 보류'로 남겼다.",
+]
+
 export function PostEditor({
   stocks,
   relatedCandidates = [],
@@ -331,6 +344,20 @@ export function PostEditor({
           className={`${inputCls} font-mono text-sm`}
         />
       </label>
+
+      <details className="rounded-xl border border-border p-4">
+        <summary className="cursor-pointer text-sm font-medium text-secondary">
+          발행 전 체크리스트
+        </summary>
+        <ul className="mt-3 space-y-1.5 text-sm text-secondary">
+          {PREPUBLISH_CHECKLIST.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <span className="mt-0.5 shrink-0 text-muted">☐</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       {error && (
         <p className="rounded-lg bg-loss/10 px-3 py-2 text-sm text-loss">

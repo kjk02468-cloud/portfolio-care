@@ -243,6 +243,7 @@ export interface PostDetail {
   themeTags: string[]
   lensFields: Record<string, unknown>
   publishedAt: string | null
+  updatedAt: string | null
   authorName: string | null
   stocks: { id: string; ticker: string; name: string; held: boolean }[]
   heldTickers: string[]
@@ -302,6 +303,7 @@ export async function getPostForSubscriber(
       .filter(Boolean),
     lensFields: parseStoredLensFields(post.lensFields),
     publishedAt: post.publishedAt?.toISOString() ?? null,
+    updatedAt: post.updatedAt?.toISOString() ?? null,
     authorName: post.author.name,
     stocks,
     heldTickers: stocks.filter((s) => s.held).map((s) => s.ticker),

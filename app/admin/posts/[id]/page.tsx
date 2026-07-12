@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { PostEditor } from '@/components/admin/PostEditor'
+import { ReportGuide } from '@/components/admin/ReportGuide'
 import type { LensTypeValue } from '@/lib/lens'
 import type { StageUpdateEntry } from '@/lib/report-templates'
 
@@ -63,6 +64,7 @@ export default async function EditPostPage({
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-primary">분석글 수정</h1>
       </div>
+      <ReportGuide />
       <PostEditor
         stocks={stocks}
         relatedCandidates={posts}

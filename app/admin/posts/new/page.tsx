@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { PostEditor } from '@/components/admin/PostEditor'
+import { ReportGuide } from '@/components/admin/ReportGuide'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +28,7 @@ export default async function NewPostPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-primary">새 분석글</h1>
       </div>
+      <ReportGuide />
       <PostEditor stocks={stocks} relatedCandidates={posts} />
     </div>
   )

@@ -5,6 +5,7 @@ import { getPostForSubscriber } from '@/lib/analysis'
 import { lensLabel } from '@/lib/lens'
 import { PostBody } from '@/components/PostBody'
 import { LensFieldsView } from '@/components/LensFieldsView'
+import { ReportDisclaimer } from '@/components/ReportDisclaimer'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,6 +112,8 @@ export default async function PostPage({
           ))}
         </div>
       )}
+
+      <ReportDisclaimer updatedAt={post.updatedAt} publishedAt={post.publishedAt} />
     </article>
   )
 }
