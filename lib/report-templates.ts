@@ -41,6 +41,21 @@ const PRICE_BLOCK = `## 가격·밸류에이션 (사업 단계와 분리)
 > 가격이 높다는 사실은 사업 가설의 부정이 아님. G1·G2가 통과인 한 사업 근거는 유효하며,
 > "과열"은 가격·밸류에이션 위험으로만 표기(4-B = "사업 개선 지속 + 가격 위험 주의").`
 
+// 차트·수급 (진입 타이밍·가격 위험 레이어) — 단계 판정(G1~G3s)의 입력이 아님.
+const CHART_BLOCK = `## 차트·수급 (진입 타이밍·가격 위험 — 단계 판정과 독립)
+
+| 항목 | 확인 지표 | 판단 |
+|---|---|---|
+| 추세 | 50일·200일 이동평균, 고점·저점 구조 | [예: 중기 상승 추세 유지] |
+| 가격 위치 | 52주 고점 대비 낙폭, 이평선 이격도 | [예: 고점 부근, 단기 가격 위험 높음] |
+| 변동성 | ATR·최근 변동성 | [예: 변동성 높아 손실 범위 큼] |
+| 거래량 | 돌파·하락 시 평균 대비 거래량 | [예: 거래량 동반 돌파 미확인] |
+| 지지·저항 | 최근 횡보 구간·전고점 | [예: 전고점 부근 단기 저항] |
+
+> 차트는 **1~4단계 분류를 바꾸지 않음.** 과열이면 "4-B: 사업 개선 지속·가격 위험 주의"
+> 또는 "신규 진입 대기"의 근거로만 사용. 추세가 훼손돼도 논리를 즉시 폐기하지 않고
+> 실적·수요 반증 조건을 재확인. 주관적 표현("차트 좋아 보임") 금지 — 지표 3~5개 고정.`
+
 // 반증 조건 + 판정 이력 + 데이터/한계 (§5·§7·§8 꼬리).
 const REPORT_TAIL = `## 무엇이 틀릴 수 있나 (반증 조건 — 사전 정의)
 
@@ -105,7 +120,9 @@ const LENS_EVIDENCE: Record<Exclude<LensTypeValue, 'macro'>, string> = {
 }
 
 function composeStockReport(lens: Exclude<LensTypeValue, 'macro'>): string {
-  return [REPORT_HEAD, LENS_EVIDENCE[lens], PRICE_BLOCK, REPORT_TAIL].join('\n\n')
+  return [REPORT_HEAD, LENS_EVIDENCE[lens], PRICE_BLOCK, CHART_BLOCK, REPORT_TAIL].join(
+    '\n\n',
+  )
 }
 
 export const REPORT_TEMPLATES: Record<LensTypeValue, string> = {
