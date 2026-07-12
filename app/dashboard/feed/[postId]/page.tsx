@@ -113,7 +113,11 @@ export default async function PostPage({
         </div>
       )}
 
-      <ReportDisclaimer updatedAt={post.updatedAt} publishedAt={post.publishedAt} />
+      <ReportDisclaimer
+        lensType={post.lensType}
+        updatedAt={post.updatedAt}
+        publishedAt={post.publishedAt}
+      />
     </article>
   )
 }
