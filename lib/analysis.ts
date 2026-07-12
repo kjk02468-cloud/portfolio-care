@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { LENS_TYPES, type LensTypeValue } from './lens'
 import { summarizeLensFields } from './lens-fields'
+import { judgeStock, type StockJudgeMaybe, type StageValue } from './stage-judge'
 
 /** Distinct tickers a subscriber holds, derived from their transactions. */
 export async function getMyTickers(userId: string): Promise<string[]> {
@@ -157,6 +158,81 @@ export async function getStockPosts(
     lensType: l,
     posts: groups.get(l)!,
   }))
+}
+
+// ── 단계별 탐색 (매뉴얼 v4.1) ────────────────────────────────────────────────
+
+export interface StageStock {
+  id: string
+  ticker: string
+  name: string
+  held: boolean
+  judge: StockJudgeMaybe
+  g1: number | null
+  g2: number | null
+  g3s: number | null
+  g4: number | null
+  kill: boolean
+  stageNote: string | null
+  posts: FeedPost[]
+}
+
+export interface StageGroup {
+  stage: StageValue | 'unjudged'
+  stocks: StageStock[]
+}
+
+/**
+ * 전체 종목을 결정트리 판정 단계별로 묶고(4→3→2→1→이탈→미판정 순),
+ * 각 종목에 발행 보고서를 붙인다. 구독자 보유 종목은 held 플래그.
+ */
+export async function getStageGroups(userId: string): Promise<StageGroup[]> {
+  const held = new Set(await getMyTickers(userId))
+  const stocks = await prisma.stock.findMany({
+    orderBy: { ticker: 'asc' },
+    include: {
+      posts: {
+        where: { status: 'published' },
+        include: POST_INCLUDE,
+        orderBy: { publishedAt: 'desc' },
+      },
+    },
+  })
+
+  const entries: StageStock[] = stocks.map((s) => ({
+    id: s.id,
+    ticker: s.ticker,
+    name: s.name,
+    held: held.has(s.ticker.toUpperCase()),
+    judge: judgeStock(s),
+    g1: s.g1,
+    g2: s.g2,
+    g3s: s.g3s,
+    g4: s.g4,
+    kill: s.kill,
+    stageNote: s.stageNote,
+    posts: s.posts.map((p) => toFeedPost(p, held)),
+  }))
+
+  const order: (StageValue | 'unjudged')[] = [4, 3, 2, 1, 0, 'unjudged']
+  return order
+    .map((stage) => ({
+      stage,
+      stocks: entries.filter((e) =>
+        stage === 'unjudged' ? !e.judge.judged : e.judge.judged && e.judge.stage === stage,
+      ),
+    }))
+    .filter((g) => g.stocks.length > 0)
+}
+
+/** 티커 → 판정 결과 맵 (배지 표시용). */
+export async function getStageBadges(): Promise<Record<string, StockJudgeMaybe>> {
+  const stocks = await prisma.stock.findMany({
+    select: { ticker: true, g1: true, g2: true, g3s: true, g4: true, kill: true },
+  })
+  const map: Record<string, StockJudgeMaybe> = {}
+  for (const s of stocks) map[s.ticker.toUpperCase()] = judgeStock(s)
+  return map
 }
 
 export interface PostDetail {

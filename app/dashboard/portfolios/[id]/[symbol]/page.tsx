@@ -4,6 +4,8 @@ import { auth } from '@/lib/auth'
 import { getHoldingDetail } from '@/lib/data'
 import { getStockPosts } from '@/lib/analysis'
 import { lensLabel } from '@/lib/lens'
+import { prisma } from '@/lib/prisma'
+import { judgeStock, STAGE_META } from '@/lib/stage-judge'
 import { TransactionList } from '@/components/TransactionList'
 import { CostVsPriceBar } from '@/components/CostVsPriceBar'
 import { PostCard } from '@/components/PostCard'
@@ -58,7 +60,14 @@ export default async function HoldingDetailPage({
 
   const { portfolio, holding, quote, transactions, tradeSummary } = detail
   const currency = portfolio.baseCurrency
-  const lensGroups = await getStockPosts(detail.symbol, session.user.id)
+  const [lensGroups, stockRow] = await Promise.all([
+    getStockPosts(detail.symbol, session.user.id),
+    prisma.stock.findUnique({
+      where: { ticker: detail.symbol },
+      select: { g1: true, g2: true, g3s: true, g4: true, kill: true },
+    }),
+  ])
+  const stageJudge = stockRow ? judgeStock(stockRow) : null
   const name = holding?.name ?? transactions.find((t) => t.name)?.name ?? null
   const assetType = holding?.assetType ?? 'STOCK'
 
@@ -93,6 +102,14 @@ export default async function HoldingDetailPage({
               >
                 {isLive ? '실시간 시세' : '데모 시세'}
               </span>
+              {stageJudge?.judged && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_META[stageJudge.stage].badgeClass}`}
+                >
+                  {STAGE_META[stageJudge.stage].label}
+                  {stageJudge.subtype ? ` ${stageJudge.subtype}` : ''}
+                </span>
+              )}
             </div>
             {name && <p className="mt-0.5 text-sm text-muted">{name}</p>}
           </div>

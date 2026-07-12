@@ -8,6 +8,27 @@ export const stockSchema = z.object({
   sector: z.string().trim().max(120).optional().or(z.literal('')),
 })
 
+// 매뉴얼 v4.1 G값 직접 수정 (경로 B — 종목 관리 보정용)
+export const stockStageSchema = z.object({
+  g1: z.number().int().min(0).max(1).nullable(),
+  g2: z.number().int().min(0).max(1).nullable(),
+  g3s: z.number().int().min(0).max(4).nullable(),
+  g4: z.number().int().min(0).max(1).nullable(),
+  kill: z.boolean(),
+  stageNote: z.string().trim().max(300).optional().or(z.literal('')),
+})
+
+// 보고서 발행 시 판정 반영 항목 (경로 A)
+export const stageUpdateEntrySchema = z.object({
+  stockId: z.string().min(1),
+  ticker: z.string().min(1).max(20),
+  g3: z.enum(['up', 'down', 'skip']).optional(),
+  g1: z.enum(['pass', 'fail', 'keep']).optional(),
+  g2: z.enum(['pass', 'fail', 'keep']).optional(),
+  g4: z.enum(['room', 'hot', 'keep']).optional(),
+  kill: z.enum(['on', 'off', 'keep']).optional(),
+})
+
 export const postSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   body: z.string().min(1, 'Body is required'),
@@ -18,6 +39,8 @@ export const postSchema = z.object({
   // Raw per-lens fields; validated against the lens-specific schema in the API.
   lensFields: z.any().optional(),
   relatedIds: z.array(z.string().min(1)).default([]),
+  // 판정 반영 (경로 A): 태그 종목별 G 갱신 선택
+  stageUpdates: z.array(stageUpdateEntrySchema).default([]),
 })
 
 export type StockInput = z.infer<typeof stockSchema>

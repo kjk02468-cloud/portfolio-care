@@ -146,6 +146,12 @@ body {
   }
 }
 
+/* Stage-3 badge (amber from the series palette; no direct Tailwind token). */
+.stage-badge-3 {
+  background: color-mix(in srgb, var(--series-3) 15%, transparent);
+  color: var(--series-3);
+}
+
 /* Rendered markdown for analysis post bodies. */
 .markdown {
   line-height: 1.7;
@@ -182,4 +188,41 @@ body {
   font-family: ui-monospace, monospace;
   font-size: 0.9em;
 }
+.markdown pre {
+  background: var(--surface-2);
+  border-radius: 0.75rem;
+  padding: 0.9em 1em;
+  margin: 0.75em 0;
+  overflow-x: auto;
+}
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+.markdown del { color: var(--text-muted); }
+/* GFM tables — wide ones scroll inside the card, not the page. */
+.markdown table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.9em 0;
+  font-size: 0.875rem;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown th {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.markdown td { color: var(--text-secondary); }
 .markdown :first-child { margin-top: 0; }

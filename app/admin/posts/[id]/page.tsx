@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { PostEditor } from '@/components/admin/PostEditor'
 import type { LensTypeValue } from '@/lib/lens'
+import type { StageUpdateEntry } from '@/lib/report-templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,16 @@ function parseInitialLensFields(raw: string | null): Record<string, unknown> {
     return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
   } catch {
     return {}
+  }
+}
+
+function parseInitialStageUpdates(raw: string | null): StageUpdateEntry[] {
+  if (!raw) return []
+  try {
+    const v = JSON.parse(raw)
+    return Array.isArray(v) ? (v as StageUpdateEntry[]) : []
+  } catch {
+    return []
   }
 }
 
@@ -64,6 +75,8 @@ export default async function EditPostPage({
           stockIds: post.stocks.map((s) => s.id),
           lensFields: parseInitialLensFields(post.lensFields),
           relatedIds: post.relatedTo.map((r) => r.id),
+          stageUpdates: parseInitialStageUpdates(post.stageUpdates),
+          alreadyPublished: post.publishedAt !== null,
         }}
       />
     </div>

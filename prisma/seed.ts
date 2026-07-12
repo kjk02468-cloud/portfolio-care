@@ -71,20 +71,26 @@ async function main() {
     },
   })
 
+  // G값 예시 (매뉴얼 결정트리 데모용): NVDA=4-A(③), AAPL=3단계(⑤),
+  // MSFT=2단계(⑥), GOOGL=4-B(④), TSLA=1단계(②), SCHD·VOO=미판정
   const stocks = [
-    { ticker: 'AAPL', name: 'Apple Inc.', industry: 'Consumer Electronics', sector: 'Technology' },
-    { ticker: 'MSFT', name: 'Microsoft', industry: 'Software', sector: 'Technology' },
-    { ticker: 'NVDA', name: 'NVIDIA', industry: 'Semiconductors', sector: 'Technology' },
-    { ticker: 'GOOGL', name: 'Alphabet', industry: 'Internet', sector: 'Communication' },
-    { ticker: 'TSLA', name: 'Tesla', industry: 'Auto Manufacturers', sector: 'Consumer Cyclical' },
+    { ticker: 'AAPL', name: 'Apple Inc.', industry: 'Consumer Electronics', sector: 'Technology', g1: 1, g2: 1, g3s: 2, g4: 1, stageNote: '시드 예시: G3s=2·G4 여유 → 3단계(⑤)' },
+    { ticker: 'MSFT', name: 'Microsoft', industry: 'Software', sector: 'Technology', g1: 1, g2: 1, g3s: 1, g4: 1, stageNote: '시드 예시: 모멘텀 미성숙 → 2단계 적립(⑥)' },
+    { ticker: 'NVDA', name: 'NVIDIA', industry: 'Semiconductors', sector: 'Technology', g1: 1, g2: 1, g3s: 4, g4: 0, stageNote: '시드 예시: G3s=4 → 4-A ride(③)' },
+    { ticker: 'GOOGL', name: 'Alphabet', industry: 'Internet', sector: 'Communication', g1: 1, g2: 1, g3s: 2, g4: 0, stageNote: '시드 예시: 모멘텀+과열 → 4-B 트림(④)' },
+    { ticker: 'TSLA', name: 'Tesla', industry: 'Auto Manufacturers', sector: 'Consumer Cyclical', g1: 0, g2: 1, g3s: 0, g4: 1, stageNote: '시드 예시: G1 미통과 → 1단계 관망(②)' },
     { ticker: 'SCHD', name: 'Schwab US Dividend', industry: 'ETF', sector: 'ETF' },
     { ticker: 'VOO', name: 'Vanguard S&P 500', industry: 'ETF', sector: 'ETF' },
-  ]
+  ] as const
   for (const s of stocks) {
+    const stageFields =
+      'g1' in s
+        ? { g1: s.g1, g2: s.g2, g3s: s.g3s, g4: s.g4, stageNote: s.stageNote, stageUpdatedAt: new Date() }
+        : {}
     await prisma.stock.upsert({
       where: { ticker: s.ticker },
-      update: { name: s.name, industry: s.industry, sector: s.sector },
-      create: s,
+      update: { name: s.name, industry: s.industry, sector: s.sector, ...stageFields },
+      create: { ticker: s.ticker, name: s.name, industry: s.industry, sector: s.sector, ...stageFields },
     })
   }
 

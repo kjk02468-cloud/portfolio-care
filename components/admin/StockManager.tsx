@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { StockStagePanel } from './StockStagePanel'
 
 interface Stock {
   id: string
@@ -9,6 +10,12 @@ interface Stock {
   name: string
   industry: string | null
   sector: string | null
+  g1: number | null
+  g2: number | null
+  g3s: number | null
+  g4: number | null
+  kill: boolean
+  stageNote: string | null
 }
 
 const inputCls =
@@ -104,23 +111,42 @@ export function StockManager({ stocks }: { stocks: Stock[] }) {
       ) : (
         <div className="card divide-y divide-border">
           {stocks.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 p-4">
-              <div className="w-20 shrink-0 font-medium text-primary">
-                {s.ticker}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-primary">{s.name}</div>
-                <div className="text-xs text-muted">
-                  {[s.sector, s.industry].filter(Boolean).join(' · ') || '—'}
+            <div key={s.id} className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-20 shrink-0 font-medium text-primary">
+                  {s.ticker}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-primary">{s.name}</div>
+                  <div className="text-xs text-muted">
+                    {[s.sector, s.industry].filter(Boolean).join(' · ') || '—'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => remove(s.id)}
+                  className="text-xs text-muted transition hover:text-loss"
+                >
+                  삭제
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => remove(s.id)}
-                className="text-xs text-muted transition hover:text-loss"
-              >
-                삭제
-              </button>
+              <div className="mt-2 pl-0 sm:pl-20">
+                <StockStagePanel
+                  stock={{
+                    id: s.id,
+                    ticker: s.ticker,
+                    g1: s.g1,
+                    g2: s.g2,
+                    g3s: s.g3s,
+                    g4: s.g4,
+                    kill: s.kill,
+                    stageNote: s.stageNote,
+                  }}
+                />
+                {s.stageNote && (
+                  <p className="mt-1.5 text-xs text-muted">{s.stageNote}</p>
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -100,6 +100,15 @@ model Stock {
   sector    String?
   createdAt DateTime       @default(now())
   posts     AnalysisPost[]
+
+  // ── 투자 매뉴얼 v4.1 판정 입력 (G값). stage는 저장하지 않고 결정트리로 파생 ──
+  g1             Int?      // 수요 통과 0|1 (null=미판정)
+  g2             Int?      // 수익성 통과 0|1
+  g3s            Int?      // G3 모멘텀 레벨 0~4 (연속 분기 수 아님, §A.2)
+  g4             Int?      // 0=과열(고점 부근), 1=여유(충분히 조정)
+  kill           Boolean   @default(false) // 킬라인 발화 (① 즉시 이탈)
+  stageNote      String?   // 최근 판정 근거 1줄
+  stageUpdatedAt DateTime?
 }
 
 enum LensType {
@@ -124,6 +133,7 @@ model AnalysisPost {
   status      PostStatus @default(draft)
   themeTags   String?    // comma-separated; browsing UI arrives in a later phase
   lensFields  String?    // JSON-encoded per-lens structured fields (Phase 2)
+  stageUpdates String?   // JSON: per-ticker G updates applied at first publish (audit)
   authorId    String
   publishedAt DateTime?
   createdAt   DateTime   @default(now())

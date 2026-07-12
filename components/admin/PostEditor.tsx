@@ -9,6 +9,13 @@ import {
   type LensTypeValue,
 } from '@/lib/lens'
 import { LensFieldsEditor } from './LensFieldsEditor'
+import { StageApplyPanel } from './StageApplyPanel'
+import {
+  REPORT_TEMPLATES,
+  missingRequiredJudgements,
+  JUDGE_FIELD_LABELS,
+  type StageUpdateEntry,
+} from '@/lib/report-templates'
 
 interface StockOption {
   id: string
@@ -31,6 +38,8 @@ export interface PostEditorInitial {
   stockIds: string[]
   lensFields: Record<string, unknown>
   relatedIds: string[]
+  stageUpdates: StageUpdateEntry[]
+  alreadyPublished: boolean
 }
 
 const inputCls =
@@ -47,7 +56,10 @@ export function PostEditor({
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(initial?.title ?? '')
-  const [body, setBody] = useState(initial?.body ?? '')
+  // 새 글은 기본 렌즈 양식이 미리 들어간 상태로 시작 (필수 양식)
+  const [body, setBody] = useState(
+    initial?.body ?? REPORT_TEMPLATES[initial?.lensType ?? 'earnings'],
+  )
   const [lensType, setLensType] = useState<LensTypeValue>(
     initial?.lensType ?? 'earnings',
   )
@@ -59,9 +71,30 @@ export function PostEditor({
   const [relatedIds, setRelatedIds] = useState<string[]>(
     initial?.relatedIds ?? [],
   )
+  const [stageUpdates, setStageUpdates] = useState<StageUpdateEntry[]>(
+    initial?.stageUpdates ?? [],
+  )
   const [filter, setFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const taggedStocks = stocks.filter((s) => stockIds.includes(s.id))
+  const alreadyPublished = initial?.alreadyPublished ?? false
+
+  // 새 글에서 렌즈 선택 시 본문이 비어 있으면 해당 렌즈 양식 자동 삽입.
+  function changeLens(next: LensTypeValue) {
+    setLensType(next)
+    const cur = body.trim()
+    if (cur === '' || cur === REPORT_TEMPLATES[lensType].trim()) {
+      setBody(REPORT_TEMPLATES[next])
+    }
+  }
+
+  function insertTemplate() {
+    setBody((prev) =>
+      prev.trim() === '' ? REPORT_TEMPLATES[lensType] : `${prev}\n\n${REPORT_TEMPLATES[lensType]}`,
+    )
+  }
 
   const filtered = useMemo(() => {
     const q = filter.trim().toUpperCase()
@@ -87,6 +120,19 @@ export function PostEditor({
 
   async function save(status: 'draft' | 'published') {
     setError(null)
+
+    // 발행 시 렌즈별 필수 판정 응답 검사 (최초 발행 대상 글만)
+    if (status === 'published' && !alreadyPublished) {
+      const missing = missingRequiredJudgements(lensType, stockIds, stageUpdates)
+      if (missing.length > 0) {
+        const tk = taggedStocks.find((s) => s.id === missing[0].stockId)?.ticker ?? ''
+        setError(
+          `발행하려면 ${tk}의 「${JUDGE_FIELD_LABELS[missing[0].field]}」 응답이 필요해요. (임시저장은 가능)`,
+        )
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const payload = {
@@ -98,6 +144,7 @@ export function PostEditor({
         stockIds,
         lensFields,
         relatedIds,
+        stageUpdates,
       }
       const res = await fetch(
         initial ? `/api/admin/posts/${initial.id}` : '/api/admin/posts',
@@ -143,7 +190,7 @@ export function PostEditor({
           </span>
           <select
             value={lensType}
-            onChange={(e) => setLensType(e.target.value as LensTypeValue)}
+            onChange={(e) => changeLens(e.target.value as LensTypeValue)}
             className={inputCls}
           >
             {LENS_TYPES.map((t) => (
@@ -221,6 +268,23 @@ export function PostEditor({
         onChange={setLensFields}
       />
 
+      {/* 판정 반영 (경로 A) — 최초 발행 시 자동 적용 */}
+      {alreadyPublished ? (
+        taggedStocks.length > 0 && (
+          <p className="rounded-xl border border-border p-4 text-xs text-muted">
+            이미 발행된 글이에요. 판정 반영은 최초 발행 시 1회만 적용돼요 — G값
+            수정이 필요하면 종목 관리에서 직접 보정하세요.
+          </p>
+        )
+      ) : (
+        <StageApplyPanel
+          lensType={lensType}
+          taggedStocks={taggedStocks}
+          updates={stageUpdates}
+          onChange={setStageUpdates}
+        />
+      )}
+
       {/* related_posts */}
       {candidates.length > 0 && (
         <div>
@@ -249,8 +313,15 @@ export function PostEditor({
       )}
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-secondary">
+        <span className="mb-1.5 flex items-center justify-between text-sm font-medium text-secondary">
           본문 (마크다운)
+          <button
+            type="button"
+            onClick={insertTemplate}
+            className="text-xs font-medium text-brand hover:underline"
+          >
+            + {LENS_LABELS[lensType]} 양식 넣기
+          </button>
         </span>
         <textarea
           value={body}
