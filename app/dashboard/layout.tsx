@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth-guards'
+import { unreadCount } from '@/lib/notifications'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { SignOutButton } from '@/components/SignOutButton'
 
@@ -11,6 +12,7 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
+  const unread = await unreadCount(user.id)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -49,6 +51,17 @@ export default async function DashboardLayout({
                 className="whitespace-nowrap rounded-lg px-2.5 py-1.5 font-medium text-secondary hover:bg-surface-2 hover:text-primary sm:px-3"
               >
                 모델
+              </Link>
+              <Link
+                href="/dashboard/notifications"
+                className="relative whitespace-nowrap rounded-lg px-2.5 py-1.5 font-medium text-secondary hover:bg-surface-2 hover:text-primary sm:px-3"
+              >
+                알림
+                {unread > 0 && (
+                  <span className="ml-1 inline-flex min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] font-semibold text-white">
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/dashboard/principles"

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { refreshAllStockIndicators } from '@/lib/indicators'
+import { notifyCronFailure } from '@/lib/notifications'
 
 // Vercel Cron이 매일 호출 — 전 종목 G4/차트/G1~G3 제안값·킬신호를 갱신.
 // Vercel은 요청에 Authorization: Bearer <CRON_SECRET> 헤더를 붙여 보낸다(공식 패턴).
@@ -17,11 +18,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const results = await refreshAllStockIndicators()
-  const failed = results.filter((r) => !r.indicatorComputed)
-  return NextResponse.json({
-    refreshed: results.length,
-    succeeded: results.length - failed.length,
-    failed: failed.map((r) => r.ticker),
-  })
+  try {
+    const results = await refreshAllStockIndicators()
+    const failed = results.filter((r) => !r.indicatorComputed)
+    // 일부 종목 지표 계산 실패 → 관리자에게 경고 알림(전체 크론은 성공으로 반환).
+    if (failed.length > 0) {
+      await notifyCronFailure(
+        `${results.length}종목 중 ${failed.length}종목 지표 계산 실패: ${failed
+          .map((r) => r.ticker)
+          .join(', ')}`,
+      )
+    }
+    return NextResponse.json({
+      refreshed: results.length,
+      succeeded: results.length - failed.length,
+      failed: failed.map((r) => r.ticker),
+    })
+  } catch (err) {
+    // 크론 전체 실패 → 관리자 알림 후 500. Vercel 로그에도 남긴다.
+    const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+    console.error('[cron] refresh-indicators failed', err)
+    await notifyCronFailure(`자동 지표 갱신이 중단됐어요: ${msg}`).catch(() => {})
+    return NextResponse.json({ error: `Refresh failed: ${msg}` }, { status: 500 })
+  }
 }

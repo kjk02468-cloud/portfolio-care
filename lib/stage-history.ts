@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { judgeStock, STAGE_META, type StockStageFields } from './stage-judge'
+import { notifyStageChange } from './notifications'
 
 // 단계 변경 이력(§7) — 확정 판정이 바뀌어 "파생 단계 라벨"이 달라질 때만 기록한다.
 // G값이 바뀌어도 단계가 같으면(예: G3s 3→4 둘 다 4-A) 이력을 남기지 않는다.
@@ -55,6 +56,13 @@ export async function recordStageChange(args: {
       unchanged: unchangedNote(args.before, args.after),
       source: args.source,
     },
+  })
+  // W5 알림 — 단계가 바뀐 종목의 보유자(킬이면 전체)에게 인앱 알림. 실패해도 판정은 유지.
+  await notifyStageChange({
+    ticker: args.ticker,
+    fromLabel: t.fromLabel,
+    toLabel: t.toLabel,
+    directCause: args.directCause.slice(0, 300),
   })
   return true
 }

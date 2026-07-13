@@ -25,6 +25,24 @@ model User {
   portfolios   Portfolio[]
   watchlist    WatchlistItem[]
   posts        AnalysisPost[]
+  notifications Notification[]
+}
+
+// 구독자·관리자 알림 (W5 모니터링). 단계 변경·킬(이탈)·크론 실패를 인앱 피드로 전달.
+// 이메일/푸시 인프라 없이 앱 안에서 확인 — createStageChangeNotifications 등에서 생성.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String // 'stage_change' | 'kill' | 'cron_failure'
+  title     String
+  body      String
+  ticker    String? // 관련 종목(있으면)
+  urgent    Boolean  @default(false) // 킬·크론 실패 등 강조 표시
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
 }
 
 model Portfolio {
