@@ -195,6 +195,12 @@ model StockAutoIndicator {
   g1Suggested        Int?
   g2Suggested        Int?
 
+  // 킬라인 수치형 참고 신호(lib/indicators/kill-flags.ts) — 판정 아님, 확인용.
+  // §A.6은 킬에 질적 확인(AND)을 요구하므로 이 값만으로 kill을 자동 설정하지 않음.
+  killRevenueDecline2q Boolean?
+  killMarginDecline2q  Boolean?
+  killGuidanceCut2q    Boolean?
+
   computedAt DateTime @updatedAt
   source     String // 원천 프로바이더 이름(감사용)
   stock      Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)

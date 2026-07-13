@@ -5,6 +5,7 @@ import { indicatorProvider as indicators } from './fmp'
 import { computeChartIndicators } from './calc'
 import { computeG1G2 } from './financials'
 import { computeG3 } from './g3-proxy'
+import { computeKillFlags } from './kill-flags'
 import { INDUSTRY_PROFILES, type IndustryProfileKey } from './industry-profiles'
 
 export interface RefreshResult {
@@ -81,7 +82,9 @@ export async function refreshStockIndicator(
   const toG = (v: number | null | undefined): 0 | 1 | null =>
     v === null || v === undefined ? null : v === 1 ? 1 : 0
   const g1g2 = computeG1G2(reports, profile, toG(stock?.g1), toG(stock?.g2))
-  const g3 = computeG3(reports, stock?.industryProfile === 'pre_profit')
+  const isPreProfit = stock?.industryProfile === 'pre_profit'
+  const g3 = computeG3(reports, isPreProfit)
+  const killFlags = computeKillFlags(reports, profile, isPreProfit)
 
   if (!chart) {
     return {
@@ -112,6 +115,9 @@ export async function refreshStockIndicator(
     epsSurprisePct: g3.epsSurprisePct,
     revenueSurprisePct: g3.revenueSurprisePct,
     g3Suggested: g3.g3Suggested,
+    killRevenueDecline2q: killFlags.revenueDecline2q,
+    killMarginDecline2q: killFlags.marginDecline2q,
+    killGuidanceCut2q: killFlags.guidanceCut2q,
     source: indicators.name,
   }
   await prisma.stockAutoIndicator.upsert({
