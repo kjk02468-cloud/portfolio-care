@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { StockStagePanel } from './StockStagePanel'
-import { AutoIndicatorPanel, type AutoIndicatorData } from './AutoIndicatorPanel'
+import { AutoIndicatorPanel, type AutoIndicatorData, type RawQuarterlyReport } from './AutoIndicatorPanel'
 
 interface Stock {
   id: string
@@ -19,6 +19,7 @@ interface Stock {
   kill: boolean
   stageNote: string | null
   autoIndicator: AutoIndicatorData | null
+  quarterlyReports: RawQuarterlyReport[]
 }
 
 const inputCls =
@@ -153,6 +154,7 @@ export function StockManager({ stocks }: { stocks: Stock[] }) {
                   stockId={s.id}
                   industryProfile={s.industryProfile}
                   indicator={s.autoIndicator}
+                  quarterlyReports={s.quarterlyReports}
                   current={{
                     g1: s.g1,
                     g2: s.g2,
