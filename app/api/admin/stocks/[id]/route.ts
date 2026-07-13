@@ -54,7 +54,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
   }
-  const { ticker, name, industry, sector, industryProfile } = parsed.data
+  const { ticker, name, industry, sector, industryProfile, fundingLine, modelWeight } = parsed.data
   const stock = await prisma.stock.update({
     where: { id },
     data: {
@@ -63,6 +63,8 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(industry !== undefined ? { industry: industry || null } : {}),
       ...(sector !== undefined ? { sector: sector || null } : {}),
       ...(industryProfile !== undefined ? { industryProfile: industryProfile || null } : {}),
+      ...(fundingLine !== undefined ? { fundingLine: fundingLine || null } : {}),
+      ...(modelWeight !== undefined ? { modelWeight: modelWeight } : {}),
     },
   })
   return NextResponse.json({ stock })

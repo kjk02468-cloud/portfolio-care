@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { StockStagePanel } from './StockStagePanel'
+import { ModelWeightEditor } from './ModelWeightEditor'
 import { AutoIndicatorPanel, type AutoIndicatorData, type RawQuarterlyReport } from './AutoIndicatorPanel'
 
 interface Stock {
@@ -19,6 +20,8 @@ interface Stock {
   kill: boolean
   stageNote: string | null
   stageUpdatedAt: string | null
+  fundingLine: string | null
+  modelWeight: number | null
   autoIndicator: AutoIndicatorData | null
   quarterlyReports: RawQuarterlyReport[]
 }
@@ -151,6 +154,11 @@ export function StockManager({ stocks }: { stocks: Stock[] }) {
                 {s.stageNote && (
                   <p className="mt-1.5 text-xs text-muted">{s.stageNote}</p>
                 )}
+                <ModelWeightEditor
+                  stockId={s.id}
+                  fundingLine={s.fundingLine}
+                  modelWeight={s.modelWeight}
+                />
                 <AutoIndicatorPanel
                   stockId={s.id}
                   industryProfile={s.industryProfile}

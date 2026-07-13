@@ -81,16 +81,28 @@ async function main() {
     { ticker: 'TSLA', name: 'Tesla', industry: 'Auto Manufacturers', sector: 'Consumer Cyclical', g1: 0, g2: 1, g3s: 0, g4: 1, stageNote: '시드 예시: G1 미통과 → 1단계 관망(②)' },
     { ticker: 'SCHD', name: 'Schwab US Dividend', industry: 'ETF', sector: 'ETF' },
     { ticker: 'VOO', name: 'Vanguard S&P 500', industry: 'ETF', sector: 'ETF' },
+    // 현 포트 8종 (매뉴얼 v4.1 예시 = 실보유 비중). 자금줄·모델 비중 포함.
+    // 3단계(⑤) 15%×3 · 4단계(③④) 10%×4 · 2단계(⑥) 15%×1 = 합 100%.
+    { ticker: 'AAOI', name: 'Applied Optoelectronics', industry: 'Optical Components', sector: 'Technology', g1: 1, g2: 1, g3s: 2, g4: 1, stageNote: '현 포트: 800G 램프 → 3단계(⑤)', fundingLine: 'optical_module', modelWeight: 15 },
+    { ticker: 'CLS', name: 'Celestica', industry: 'EMS', sector: 'Technology', g1: 1, g2: 1, g3s: 2, g4: 1, stageNote: '현 포트: AI 서버 EMS → 3단계(⑤)', fundingLine: 'server_ems', modelWeight: 15 },
+    { ticker: 'RMBS', name: 'Rambus', industry: 'Memory IP', sector: 'Technology', g1: 1, g2: 1, g3s: 2, g4: 1, stageNote: '현 포트: 메모리 인터페이스 로열티 → 3단계(⑤)', fundingLine: 'memory_ip', modelWeight: 15 },
+    { ticker: 'ALAB', name: 'Astera Labs', industry: 'Connectivity IC', sector: 'Technology', g1: 1, g2: 1, g3s: 4, g4: 0, stageNote: '현 포트: 추정치 상향 지속 → 4-A ride(③)', fundingLine: 'connectivity_ic', modelWeight: 10 },
+    { ticker: 'CRDO', name: 'Credo Technology', industry: 'Connectivity IC', sector: 'Technology', g1: 1, g2: 1, g3s: 3, g4: 1, stageNote: '현 포트: AEC 램프 → 4-A ride(③)', fundingLine: 'connectivity_ic', modelWeight: 10 },
+    { ticker: 'NBIS', name: 'Nebius Group', industry: 'GPU Cloud', sector: 'Technology', g1: 1, g2: 1, g3s: 2, g4: 0, stageNote: '현 포트: 과열 → 4-B 트림(④)', fundingLine: 'gpu_cloud', modelWeight: 10 },
+    { ticker: 'BE', name: 'Bloom Energy', industry: 'Fuel Cells', sector: 'Industrials', g1: 1, g2: 1, g3s: 2, g4: 0, stageNote: '현 포트: DC 전력 계약 → 4-B 트림(④)', fundingLine: 'dc_power', modelWeight: 10 },
+    { ticker: 'RKLB', name: 'Rocket Lab', industry: 'Space Launch', sector: 'Industrials', g1: 1, g2: 1, g3s: 1, g4: 1, stageNote: '현 포트: 모멘텀 미성숙 → 2단계 적립(⑥)', fundingLine: 'space_launch', modelWeight: 15 },
   ] as const
   for (const s of stocks) {
     const stageFields =
       'g1' in s
         ? { g1: s.g1, g2: s.g2, g3s: s.g3s, g4: s.g4, stageNote: s.stageNote, stageUpdatedAt: new Date() }
         : {}
+    const modelFields =
+      'modelWeight' in s ? { fundingLine: s.fundingLine, modelWeight: s.modelWeight } : {}
     await prisma.stock.upsert({
       where: { ticker: s.ticker },
-      update: { name: s.name, industry: s.industry, sector: s.sector, ...stageFields },
-      create: { ticker: s.ticker, name: s.name, industry: s.industry, sector: s.sector, ...stageFields },
+      update: { name: s.name, industry: s.industry, sector: s.sector, ...stageFields, ...modelFields },
+      create: { ticker: s.ticker, name: s.name, industry: s.industry, sector: s.sector, ...stageFields, ...modelFields },
     })
   }
 

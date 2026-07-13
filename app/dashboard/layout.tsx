@@ -45,6 +45,12 @@ export default async function DashboardLayout({
                 단계
               </Link>
               <Link
+                href="/dashboard/model"
+                className="whitespace-nowrap rounded-lg px-2.5 py-1.5 font-medium text-secondary hover:bg-surface-2 hover:text-primary sm:px-3"
+              >
+                모델
+              </Link>
+              <Link
                 href="/dashboard/principles"
                 className="hidden whitespace-nowrap rounded-lg px-2.5 py-1.5 font-medium text-secondary hover:bg-surface-2 hover:text-primary sm:inline sm:px-3"
               >

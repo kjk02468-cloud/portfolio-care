@@ -2,6 +2,14 @@ import { prisma } from './prisma'
 import { LENS_TYPES, type LensTypeValue } from './lens'
 import { summarizeLensFields } from './lens-fields'
 import { judgeStock, type StockJudgeMaybe, type StageValue } from './stage-judge'
+import {
+  checkPortfolio,
+  fundingLineSummary,
+  FUNDING_LINES,
+  type FundingLineKey,
+  type ModelPosition,
+  type Violation,
+} from './portfolio-rules'
 
 /** Distinct tickers a subscriber holds, derived from their transactions. */
 export async function getMyTickers(userId: string): Promise<string[]> {
@@ -223,6 +231,73 @@ export async function getStageGroups(userId: string): Promise<StageGroup[]> {
       ),
     }))
     .filter((g) => g.stocks.length > 0)
+}
+
+// ── 모델 포트폴리오 (매뉴얼 §구성 제한·메타테마) ─────────────────────────────
+
+export interface ModelPortfolioStock {
+  id: string
+  ticker: string
+  name: string
+  held: boolean
+  weight: number
+  fundingLine: string | null
+  fundingLineLabel: string | null
+  judge: StockJudgeMaybe
+}
+
+export interface ModelPortfolioView {
+  positions: ModelPortfolioStock[]
+  totalWeight: number
+  violations: Violation[]
+  fundingLines: ReturnType<typeof fundingLineSummary>
+  asOf: string | null
+}
+
+/**
+ * modelWeight가 설정된 종목만 모아 비중 규율을 검사한다. 구독자·관리자 공용 로더.
+ * 판정은 저장하지 않고 항상 G값에서 파생, 위반도 순수 함수로 실시간 계산.
+ */
+export async function getModelPortfolio(userId?: string): Promise<ModelPortfolioView> {
+  const held = userId ? new Set(await getMyTickers(userId)) : new Set<string>()
+  const stocks = await prisma.stock.findMany({
+    where: { modelWeight: { not: null } },
+    orderBy: [{ modelWeight: 'desc' }, { ticker: 'asc' }],
+  })
+
+  const positions: ModelPosition[] = stocks.map((s) => ({
+    ticker: s.ticker,
+    weight: s.modelWeight ?? 0,
+    fundingLine: (s.fundingLine as FundingLineKey | null) ?? null,
+    stage: s,
+  }))
+
+  const view: ModelPortfolioStock[] = stocks.map((s) => ({
+    id: s.id,
+    ticker: s.ticker,
+    name: s.name,
+    held: held.has(s.ticker.toUpperCase()),
+    weight: s.modelWeight ?? 0,
+    fundingLine: s.fundingLine,
+    fundingLineLabel:
+      s.fundingLine && s.fundingLine in FUNDING_LINES
+        ? FUNDING_LINES[s.fundingLine as FundingLineKey].label
+        : null,
+    judge: judgeStock(s),
+  }))
+
+  const latest = stocks
+    .map((s) => s.stageUpdatedAt)
+    .filter((d): d is Date => d !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0]
+
+  return {
+    positions: view,
+    totalWeight: Math.round(positions.reduce((a, p) => a + p.weight, 0) * 10) / 10,
+    violations: checkPortfolio(positions),
+    fundingLines: fundingLineSummary(positions),
+    asOf: latest ? latest.toISOString() : null,
+  }
 }
 
 /** 티커 → 판정 결과 맵 (배지 표시용). */

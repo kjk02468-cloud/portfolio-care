@@ -116,6 +116,12 @@ model Stock {
   // 값은 lib/indicators/industry-profiles.ts의 IndustryProfileKey와 일치해야 함.
   industryProfile String?
 
+  // ── 포트폴리오 비중 규율 (매뉴얼 §구성 제한·메타테마) ──
+  // 자금줄(메타테마) — 종목당 1줄. lib/portfolio-rules.ts의 FundingLineKey와 일치.
+  fundingLine String?
+  // 모델 포트폴리오 목표 비중(%). null=모델 포트 미편입.
+  modelWeight Float?
+
   priceBars        StockPriceBar[]
   quarterlyReports StockQuarterlyReport[]
   autoIndicator    StockAutoIndicator?

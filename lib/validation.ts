@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { LENS_TYPES } from './lens'
 import { INDUSTRY_PROFILE_KEYS } from './indicators/industry-profiles'
+import { FUNDING_LINE_KEYS } from './portfolio-rules'
 
 export const stockSchema = z.object({
   ticker: z.string().trim().min(1).max(20).toUpperCase(),
@@ -13,6 +14,13 @@ export const stockSchema = z.object({
     .union([z.enum(INDUSTRY_PROFILE_KEYS as [string, ...string[]]), z.literal('')])
     .nullable()
     .optional(),
+  // 자금줄(메타테마) — 빈 문자열은 해제(null). lib/portfolio-rules.ts FundingLineKey.
+  fundingLine: z
+    .union([z.enum(FUNDING_LINE_KEYS as [string, ...string[]]), z.literal('')])
+    .nullable()
+    .optional(),
+  // 모델 포트폴리오 목표 비중(%). null=미편입. 0~100 범위.
+  modelWeight: z.coerce.number().min(0).max(100).nullable().optional(),
 })
 
 // 매뉴얼 v4.1 G값 직접 수정 (경로 B — 종목 관리 보정용)
