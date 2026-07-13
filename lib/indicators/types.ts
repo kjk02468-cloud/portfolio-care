@@ -21,10 +21,23 @@ export interface QuarterlyReport {
   revenueEstimate: number | null
 }
 
+// 밸류에이션 원자료 스냅샷 (lib/indicators/valuation.ts에서 배수·중앙값 계산).
+export interface ValuationSnapshotRaw {
+  price: number | null
+  marketCap: number | null
+  enterpriseValue: number | null
+  ttmRevenue: number | null
+  ttmEps: number | null
+  evToSalesHistory: number[]
+  peHistory: number[]
+}
+
 export interface IndicatorProvider {
   readonly name: 'fmp' | 'mock'
   /** 최근 lookbackDays(기본 380 캘린더일 ≈ 52주+여유) 일봉, 날짜 오름차순. */
   getDailyBars(symbol: string, lookbackDays?: number): Promise<PriceBar[]>
   /** 최근 quarters개 분기 재무, periodEnd 오름차순(과거→최근). */
   getQuarterlyReports(symbol: string, quarters?: number): Promise<QuarterlyReport[]>
+  /** 밸류에이션 원자료(EV·시총·TTM·과거 배수). 확보 불가면 null. */
+  getValuation(symbol: string): Promise<ValuationSnapshotRaw | null>
 }

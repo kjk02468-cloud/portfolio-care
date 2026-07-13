@@ -12,8 +12,11 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const { id } = await params
-  const body = (await req.json().catch(() => null)) as { lensType?: unknown } | null
+  const body = (await req.json().catch(() => null)) as
+    | { lensType?: unknown; withNarrative?: unknown }
+    | null
   const lensType = body?.lensType
+  const withNarrative = body?.withNarrative === true
   if (typeof lensType !== 'string' || !LENS_TYPES.includes(lensType as LensTypeValue)) {
     return NextResponse.json({ error: 'Invalid lensType' }, { status: 400 })
   }
@@ -25,7 +28,7 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   try {
-    const markdown = await generateReportDraft(id, lensType as LensTypeValue)
+    const markdown = await generateReportDraft(id, lensType as LensTypeValue, withNarrative)
     return NextResponse.json({ markdown })
   } catch (err) {
     return NextResponse.json(

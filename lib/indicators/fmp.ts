@@ -1,4 +1,4 @@
-import type { IndicatorProvider, PriceBar, QuarterlyReport } from './types'
+import type { IndicatorProvider, PriceBar, QuarterlyReport, ValuationSnapshotRaw } from './types'
 import { mockIndicatorProvider } from './mock'
 
 const BASE = 'https://financialmodelingprep.com/api/v3'
@@ -127,7 +127,61 @@ function makeFmpProvider(apiKey: string): IndicatorProvider {
       .reverse()
   }
 
-  return { name: 'fmp', getDailyBars, getQuarterlyReports }
+  // FMP key-metrics(period=quarter) 응답 중 사용 필드.
+  interface FmpKeyMetrics {
+    date: string
+    enterpriseValue: number | null
+    marketCap: number | null
+    evToSales: number | null
+    peRatio: number | null
+  }
+  interface FmpIncomeEps {
+    date: string
+    revenue: number | null
+    eps: number | null
+  }
+  interface FmpQuoteShort {
+    price: number | null
+  }
+
+  async function getValuation(symbol: string): Promise<ValuationSnapshotRaw | null> {
+    const sym = symbol.toUpperCase()
+    const [metrics, income, quote] = await Promise.all([
+      fetchJson<FmpKeyMetrics[]>(
+        `${BASE}/key-metrics/${encodeURIComponent(sym)}?period=quarter&limit=20&apikey=${apiKey}`,
+        `key-metrics/${sym}`,
+      ),
+      fetchJson<FmpIncomeEps[]>(
+        `${BASE}/income-statement/${encodeURIComponent(sym)}?period=quarter&limit=4&apikey=${apiKey}`,
+        `income-statement(ttm)/${sym}`,
+      ),
+      fetchJson<FmpQuoteShort[]>(
+        `${BASE}/quote-short/${encodeURIComponent(sym)}?apikey=${apiKey}`,
+        `quote-short/${sym}`,
+      ),
+    ])
+    // key-metrics가 비면 밸류에이션 판정 보류 — 지어내지 않는다.
+    if (!metrics || metrics.length === 0) return null
+
+    const ttmRevenue = income && income.length > 0
+      ? income.reduce((a, r) => a + (r.revenue ?? 0), 0)
+      : null
+    const ttmEps = income && income.length > 0
+      ? income.reduce((a, r) => a + (r.eps ?? 0), 0)
+      : null
+
+    return {
+      price: quote?.[0]?.price ?? null,
+      marketCap: metrics[0].marketCap ?? null,
+      enterpriseValue: metrics[0].enterpriseValue ?? null,
+      ttmRevenue,
+      ttmEps,
+      evToSalesHistory: metrics.map((m) => m.evToSales).filter((v): v is number => v !== null),
+      peHistory: metrics.map((m) => m.peRatio).filter((v): v is number => v !== null),
+    }
+  }
+
+  return { name: 'fmp', getDailyBars, getQuarterlyReports, getValuation }
 }
 
 // Choose the provider once at module load: real API when a key is present,

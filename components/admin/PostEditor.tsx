@@ -93,6 +93,7 @@ export function PostEditor({
   const [draftStockId, setDraftStockId] = useState('')
   const [draftLoading, setDraftLoading] = useState(false)
   const [draftError, setDraftError] = useState<string | null>(null)
+  const [withNarrative, setWithNarrative] = useState(false)
 
   const taggedStocks = stocks.filter((s) => stockIds.includes(s.id))
   const alreadyPublished = initial?.alreadyPublished ?? false
@@ -123,7 +124,7 @@ export function PostEditor({
       const res = await fetch(`/api/admin/stocks/${targetId}/draft-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lensType }),
+        body: JSON.stringify({ lensType, withNarrative }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error ?? '초안 생성에 실패했어요.')
@@ -373,6 +374,14 @@ export function PostEditor({
           >
             {draftLoading ? '생성 중…' : '지표로 초안 채우기 (본문 교체)'}
           </button>
+          <label className="flex items-center gap-1 text-xs text-secondary" title="ANTHROPIC_API_KEY가 있을 때만 동작해요. 생성된 서술은 발행 전 검토·수정 대상이에요.">
+            <input
+              type="checkbox"
+              checked={withNarrative}
+              onChange={(e) => setWithNarrative(e.target.checked)}
+            />
+            AI 서술 초안 포함
+          </label>
           {draftError && <span className="text-xs text-loss">{draftError}</span>}
         </div>
       )}

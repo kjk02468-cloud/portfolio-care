@@ -7,6 +7,7 @@ import {
   computeSupportResistance,
 } from './indicators/calc'
 import { INDUSTRY_PROFILES, type IndustryProfileKey } from './indicators/industry-profiles'
+import { generateNarrative, type NarrativeInput } from './report-narrative'
 import type { LensTypeValue } from './lens'
 
 // 자동 초안 생성 — 지표·재무·판정 결과로 §9 템플릿의 "숫자·표" 부분만 채운다.
@@ -26,9 +27,42 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+// 자동 계산된 밸류에이션 배수를 한 줄로. 흑자 전이면 P/E는 무의미로 표기(매뉴얼).
+function buildValuationLine(
+  ind: {
+    evToSales: number | null
+    pe: number | null
+    evToSalesMedian5y: number | null
+    peMedian5y: number | null
+    valuationPreProfit: boolean | null
+    evToSalesVsMedianPct: number | null
+    peVsMedianPct: number | null
+  } | null | undefined,
+): string {
+  if (!ind || (ind.evToSales === null && ind.pe === null)) {
+    return '[배수 데이터 미확보 — 직접 입력]'
+  }
+  const num = (v: number | null, digits = 1) => (v === null ? '—' : v.toFixed(digits))
+  const vs = (v: number | null) =>
+    v === null ? '' : ` (5년 중앙값 대비 ${v >= 0 ? '+' : ''}${v.toFixed(0)}%)`
+  const parts: string[] = []
+  if (ind.evToSales !== null) {
+    parts.push(
+      `EV/Sales ${num(ind.evToSales)}배 (중앙값 ${num(ind.evToSalesMedian5y)})${vs(ind.evToSalesVsMedianPct)}`,
+    )
+  }
+  if (ind.valuationPreProfit) {
+    parts.push('P/E: 흑자 전이라 무의미')
+  } else if (ind.pe !== null) {
+    parts.push(`P/E ${num(ind.pe)}배 (중앙값 ${num(ind.peMedian5y)})${vs(ind.peVsMedianPct)}`)
+  }
+  return parts.join(' · ') || '[배수 데이터 미확보 — 직접 입력]'
+}
+
 export async function generateReportDraft(
   stockId: string,
   lensType: LensTypeValue,
+  withNarrative = false,
 ): Promise<string> {
   const stock = await prisma.stock.findUnique({
     where: { id: stockId },
@@ -113,10 +147,11 @@ export async function generateReportDraft(
 
   const evidence = buildLensEvidence(lensType, ind, latestReport, profile)
 
+  const valuationLine = buildValuationLine(ind)
   const priceBlock = `## 가격·밸류에이션 (사업 단계와 분리)
 
 - **가격 위치:** 52주 고점 대비 ${na(drawdownPctDisplay)} (52주 고점 ${na(ind?.high52w, 2, '')}, 현재가 ${na(ind?.price, 2, '')})
-- **밸류에이션:** [지표, 현재값, 과거·동종 비교] — 배수 데이터 미확보, 직접 입력 필요
+- **밸류에이션(자동):** ${valuationLine}
   - 흑자 전(pre-profit): EV/Sales · PSR · RPO 배수 (P/E 무의미)
   - 흑자 기업: P/E · EV/EBITDA · FCF yield
 - **시장 위험:** ${volatility} (ATR14 ${na(ind?.atr14, 2, '')})
@@ -180,7 +215,53 @@ ${
 - 데이터 기준일: ${asOf}
 - 데이터 부족 항목은 해당 G값을 비워 '판정 보류'(미판정)로 남김.`
 
-  return [head, evidence, priceBlock, chartBlock, tail].join('\n\n')
+  // AI 서술 초안(선택) — 키가 있고 요청됐을 때만. 매뉴얼 하우스 보이스로 쓰되
+  // "분석가 검토 전 초안"임을 명시하고, 아래 [대괄호] 스켈레톤은 그대로 둔다.
+  let narrativeBlock = ''
+  if (withNarrative && judged.judged) {
+    const narrative = await generateNarrative({
+      ticker: stock.ticker,
+      name: stock.name,
+      stageLabel,
+      rule: judged.judged ? judged.rule : null,
+      lensType,
+      g1: stock.g1,
+      g2: stock.g2,
+      g3s: stock.g3s,
+      g4: stock.g4,
+      kill: stock.kill,
+      revenueYoY: ind?.revenueYoY ?? null,
+      grossMarginPct: ind?.grossMarginPct ?? null,
+      operatingMarginPct: ind?.operatingMarginPct ?? null,
+      revenueSurprisePct: ind?.revenueSurprisePct ?? null,
+      epsSurprisePct: ind?.epsSurprisePct ?? null,
+      drawdownPct: drawdownPctDisplay,
+      evToSales: ind?.evToSales ?? null,
+      pe: ind?.pe ?? null,
+      valuationPreProfit: ind?.valuationPreProfit ?? null,
+      profileLabel: profile?.label ?? null,
+    } satisfies NarrativeInput)
+    if (narrative) {
+      narrativeBlock = `> 🤖 **AI 서술 초안 (분석가 검토 전 — 발행 전 반드시 확인)**
+>
+> **한 줄 요약:** ${narrative.oneLiner}
+>
+> **왜 ${stageLabel}인가:** ${narrative.whyStage}
+>
+> **반증 조건:**
+${narrative.falsification
+  .split('\n')
+  .map((l) => `> ${l}`)
+  .join('\n')}
+>
+> _위 서술은 자동 생성 초안이에요. 아래 스켈레톤을 채우며 사실 여부·표현을 직접 검토·수정하세요._`
+    }
+  }
+
+  const blocks = narrativeBlock
+    ? [head, narrativeBlock, evidence, priceBlock, chartBlock, tail]
+    : [head, evidence, priceBlock, chartBlock, tail]
+  return blocks.join('\n\n')
 }
 
 function buildLensEvidence(

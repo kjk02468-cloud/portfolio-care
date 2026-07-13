@@ -226,6 +226,16 @@ model StockAutoIndicator {
   killMarginDecline2q  Boolean?
   killGuidanceCut2q    Boolean?
 
+  // 밸류에이션 자동화(lib/indicators/valuation.ts) — 가격 위험 레이어, 단계 판정과 분리.
+  // preProfit면 pe는 null(P/E 무의미). *VsMedianPct는 5년(20분기) 중앙값 대비 % (양수=비쌈).
+  evToSales            Float?
+  pe                   Float?
+  evToSalesMedian5y    Float?
+  peMedian5y           Float?
+  valuationPreProfit   Boolean?
+  evToSalesVsMedianPct Float?
+  peVsMedianPct        Float?
+
   computedAt DateTime @updatedAt
   source     String // 원천 프로바이더 이름(감사용)
   stock      Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)

@@ -27,6 +27,13 @@ export interface AutoIndicatorData {
   killRevenueDecline2q: boolean | null
   killMarginDecline2q: boolean | null
   killGuidanceCut2q: boolean | null
+  evToSales: number | null
+  pe: number | null
+  evToSalesMedian5y: number | null
+  peMedian5y: number | null
+  valuationPreProfit: boolean | null
+  evToSalesVsMedianPct: number | null
+  peVsMedianPct: number | null
   asOf: string
   computedAt: string
   source: string
@@ -333,6 +340,37 @@ export function AutoIndicatorPanel({
               <span>{volume}</span>
             </div>
           </div>
+
+          {/* 밸류에이션 — 가격 위험 레이어, 단계 판정과 분리 */}
+          {(indicator.evToSales !== null || indicator.pe !== null) && (
+            <div className="rounded-lg bg-surface px-2.5 py-2 text-xs text-secondary">
+              <span className="font-medium text-primary">밸류에이션</span>{' '}
+              <span className="text-muted">(가격 위험 · 판정과 독립)</span>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                {indicator.evToSales !== null && (
+                  <span>
+                    EV/Sales {indicator.evToSales.toFixed(1)}배 (중앙값{' '}
+                    {indicator.evToSalesMedian5y?.toFixed(1) ?? '—'}
+                    {indicator.evToSalesVsMedianPct !== null
+                      ? `, ${indicator.evToSalesVsMedianPct >= 0 ? '+' : ''}${indicator.evToSalesVsMedianPct.toFixed(0)}%`
+                      : ''}
+                    )
+                  </span>
+                )}
+                {indicator.valuationPreProfit ? (
+                  <span className="text-muted">P/E: 흑자 전(무의미)</span>
+                ) : indicator.pe !== null ? (
+                  <span>
+                    P/E {indicator.pe.toFixed(1)}배 (중앙값 {indicator.peMedian5y?.toFixed(1) ?? '—'}
+                    {indicator.peVsMedianPct !== null
+                      ? `, ${indicator.peVsMedianPct >= 0 ? '+' : ''}${indicator.peVsMedianPct.toFixed(0)}%`
+                      : ''}
+                    )
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
 
           {/* 킬라인 수치형 참고 신호 — 판정 아님, 확인용 */}
           {activeKillFlags.length > 0 && (

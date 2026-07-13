@@ -1,4 +1,4 @@
-import type { IndicatorProvider, PriceBar, QuarterlyReport } from './types'
+import type { IndicatorProvider, PriceBar, QuarterlyReport, ValuationSnapshotRaw } from './types'
 
 // Same deterministic-hash approach as lib/market/mock.ts, kept local so the two
 // mock layers (live quotes vs historical indicators) stay decoupled.
@@ -120,6 +120,37 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+// 결정적 밸류에이션 스냅샷: 최근 4분기 mock 재무로 TTM을 만들고, 티커별 해시로
+// EV·시총·과거 배수 시계열을 만든다(중앙값 계산이 의미를 갖도록 분산 포함).
+function mockValuation(symbol: string): ValuationSnapshotRaw {
+  const sym = symbol.toUpperCase()
+  const reports = mockQuarterlyReports(sym, 4)
+  const ttmRevenue = reports.reduce((a, r) => a + (r.revenue ?? 0), 0)
+  const ttmEps = reports.reduce((a, r) => a + (r.epsActual ?? 0), 0)
+  const bars = mockBars(sym, 5)
+  const price = bars.length ? bars[bars.length - 1].close : null
+  const marketCap = ttmRevenue * (2 + (hash(sym + ':psr') % 800) / 100) // PSR 2~10
+  const enterpriseValue = marketCap * (1 + ((hash(sym + ':ev') % 40) - 10) / 100) // ±
+  const evToSalesNow = ttmRevenue > 0 ? enterpriseValue / ttmRevenue : 3
+  const peNow = ttmEps > 0 && price ? price / ttmEps : 20
+  // 과거 20분기 배수: 현재값 언저리로 ±30% 흔들어 중앙값이 현재와 다르게 나오도록.
+  const evToSalesHistory = Array.from({ length: 20 }, (_, i) =>
+    evToSalesNow * (0.7 + (hash(sym + 'evh' + i) % 60) / 100),
+  )
+  const peHistory = Array.from({ length: 20 }, (_, i) =>
+    peNow * (0.7 + (hash(sym + 'peh' + i) % 60) / 100),
+  )
+  return {
+    price,
+    marketCap: round2(marketCap),
+    enterpriseValue: round2(enterpriseValue),
+    ttmRevenue: round2(ttmRevenue),
+    ttmEps: round2(ttmEps),
+    evToSalesHistory,
+    peHistory,
+  }
+}
+
 export const mockIndicatorProvider: IndicatorProvider = {
   name: 'mock',
   async getDailyBars(symbol, lookbackDays = 380) {
@@ -127,5 +158,8 @@ export const mockIndicatorProvider: IndicatorProvider = {
   },
   async getQuarterlyReports(symbol, quarters = 8) {
     return mockQuarterlyReports(symbol, quarters)
+  },
+  async getValuation(symbol) {
+    return mockValuation(symbol)
   },
 }

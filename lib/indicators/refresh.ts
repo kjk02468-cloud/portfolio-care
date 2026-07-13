@@ -7,6 +7,7 @@ import { computeChartIndicators } from './calc'
 import { computeG1G2 } from './financials'
 import { computeG3 } from './g3-proxy'
 import { computeKillFlags } from './kill-flags'
+import { computeValuation } from './valuation'
 import { INDUSTRY_PROFILES, type IndustryProfileKey } from './industry-profiles'
 
 export interface RefreshResult {
@@ -103,6 +104,13 @@ export async function refreshStockIndicator(
   const g3 = computeG3(reports, isPreProfit)
   const killFlags = computeKillFlags(reports, profile, isPreProfit)
 
+  // 밸류에이션 — 벤더가 주면 실데이터, 실패하면 mock으로 명시적 폴백(source는 위와 동일 규칙).
+  let valuationRaw = await indicators.getValuation(ticker)
+  if (!valuationRaw) {
+    valuationRaw = await mockIndicatorProvider.getValuation(ticker)
+  }
+  const valuation = valuationRaw ? computeValuation(valuationRaw) : null
+
   if (!chart) {
     return {
       stockId,
@@ -135,6 +143,13 @@ export async function refreshStockIndicator(
     killRevenueDecline2q: killFlags.revenueDecline2q,
     killMarginDecline2q: killFlags.marginDecline2q,
     killGuidanceCut2q: killFlags.guidanceCut2q,
+    evToSales: valuation?.evToSales ?? null,
+    pe: valuation?.pe ?? null,
+    evToSalesMedian5y: valuation?.evToSalesMedian5y ?? null,
+    peMedian5y: valuation?.peMedian5y ?? null,
+    valuationPreProfit: valuation?.preProfit ?? null,
+    evToSalesVsMedianPct: valuation?.evToSalesVsMedianPct ?? null,
+    peVsMedianPct: valuation?.peVsMedianPct ?? null,
     source,
   }
   await prisma.stockAutoIndicator.upsert({
