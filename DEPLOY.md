@@ -12,6 +12,8 @@
 | `AUTH_SECRET` | 세션 서명 키. `npx auth secret` 또는 `openssl rand -base64 32` |
 | `AUTH_URL` | 배포된 공개 URL (예: `https://your-app.vercel.app`) |
 | `FINNHUB_API_KEY` | (선택) 실시간 시세. 없으면 데모 시세로 자동 동작 |
+| `FMP_API_KEY` | (선택) G값 자동화용 히스토리 데이터. 없으면 mock으로 동작 |
+| `CRON_SECRET` | 일일 지표 자동 새로고침 크론 인증. `openssl rand -base64 32` |
 
 ---
 
@@ -28,6 +30,11 @@
 6. (선택) 데모 데이터 넣기 — 로컬에서 한 번:
    `DATABASE_URL="<Neon>" npm run db:seed`
    → 데모 계정: `demo@portfolio.care / demo1234`, `admin@portfolio.care / admin1234`
+
+Vercel은 `vercel.json`의 크론 설정을 자동으로 읽어 매일 평일 22:00 UTC에
+`/api/cron/refresh-indicators`를 호출합니다(G4·차트·G1~G3 제안값·킬신호 전 종목
+갱신). **Hobby 플랜은 크론이 지정 시각 근처에서만 실행**되고 하루 1회 제한이라
+정확한 시각 보장은 안 됩니다 — Pro 플랜이면 정확히 실행돼요.
 
 ## B. Docker (어디서든)
 

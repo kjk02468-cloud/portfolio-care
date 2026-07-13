@@ -90,6 +90,9 @@ export function PostEditor({
   const [filter, setFilter] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [draftStockId, setDraftStockId] = useState('')
+  const [draftLoading, setDraftLoading] = useState(false)
+  const [draftError, setDraftError] = useState<string | null>(null)
 
   const taggedStocks = stocks.filter((s) => stockIds.includes(s.id))
   const alreadyPublished = initial?.alreadyPublished ?? false
@@ -107,6 +110,29 @@ export function PostEditor({
     setBody((prev) =>
       prev.trim() === '' ? REPORT_TEMPLATES[lensType] : `${prev}\n\n${REPORT_TEMPLATES[lensType]}`,
     )
+  }
+
+  // 자동 초안 생성 — 지표·재무·판정 결과로 숫자·표를 채운 초안. 서술은 [대괄호]로
+  // 남아있어 분석가가 직접 써야 함(지어내지 않음).
+  async function generateDraft() {
+    const targetId = draftStockId || taggedStocks[0]?.id
+    if (!targetId) return
+    setDraftError(null)
+    setDraftLoading(true)
+    try {
+      const res = await fetch(`/api/admin/stocks/${targetId}/draft-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lensType }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error ?? '초안 생성에 실패했어요.')
+      setBody(data.markdown)
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : '오류가 발생했어요.')
+    } finally {
+      setDraftLoading(false)
+    }
   }
 
   const filtered = useMemo(() => {
@@ -322,6 +348,32 @@ export function PostEditor({
               </label>
             ))}
           </div>
+        </div>
+      )}
+
+      {taggedStocks.length > 0 && lensType !== 'macro' && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-3">
+          <span className="text-xs font-medium text-secondary">자동 초안 생성</span>
+          <select
+            value={draftStockId || taggedStocks[0]?.id || ''}
+            onChange={(e) => setDraftStockId(e.target.value)}
+            className="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-primary outline-none focus:border-brand"
+          >
+            {taggedStocks.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.ticker}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={generateDraft}
+            disabled={draftLoading}
+            className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-brand-fg transition hover:bg-brand-strong disabled:opacity-60"
+          >
+            {draftLoading ? '생성 중…' : '지표로 초안 채우기 (본문 교체)'}
+          </button>
+          {draftError && <span className="text-xs text-loss">{draftError}</span>}
         </div>
       )}
 

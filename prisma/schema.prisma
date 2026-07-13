@@ -102,6 +102,8 @@ model Stock {
   posts     AnalysisPost[]
 
   // ── 투자 매뉴얼 v4.1 판정 입력 (G값). stage는 저장하지 않고 결정트리로 파생 ──
+  // 이 G값들은 "확정값" — 관리자가 승인해야 바뀐다(경로 A/B). 자동 파이프라인이 낸
+  // 제안값은 아래 AutoIndicator에만 쓰이고, 이 필드로 자동 반영되지 않는다.
   g1             Int?      // 수요 통과 0|1 (null=미판정)
   g2             Int?      // 수익성 통과 0|1
   g3s            Int?      // G3 모멘텀 레벨 0~4 (연속 분기 수 아님, §A.2)
@@ -109,6 +111,99 @@ model Stock {
   kill           Boolean   @default(false) // 킬라인 발화 (① 즉시 이탈)
   stageNote      String?   // 최근 판정 근거 1줄
   stageUpdatedAt DateTime?
+
+  // 업종별 G1·G2 치환표(매뉴얼) 중 어느 프로필을 적용할지. null=자동 제안 안 함(판정 보류).
+  // 값은 lib/indicators/industry-profiles.ts의 IndustryProfileKey와 일치해야 함.
+  industryProfile String?
+
+  priceBars        StockPriceBar[]
+  quarterlyReports StockQuarterlyReport[]
+  autoIndicator    StockAutoIndicator?
+}
+
+// ── G값 자동화 파이프라인 (2026-07 로드맵) ───────────────────────────────────
+// 원시 데이터(가격·재무)는 캐시 테이블에, 계산된 제안값은 AutoIndicator 1행에.
+// 확정 판정(Stock.g1~g4)은 관리자가 "제안값 적용" 버튼으로만 바뀐다 — 자동
+// 파이프라인이 Stock의 확정 G값을 직접 덮어쓰지 않는다(결정론·감사가능성 유지).
+
+// 일별 OHLCV 캐시. 52주 고점(G4), 이동평균·ATR·거래량(차트·수급 카드)의 원천.
+model StockPriceBar {
+  id      String   @id @default(cuid())
+  stockId String
+  date    DateTime // 거래일 (자정 UTC로 정규화)
+  open    Float
+  high    Float
+  low     Float
+  close   Float
+  volume  Float
+  stock   Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, date])
+  @@index([stockId, date])
+}
+
+// 분기 재무 캐시(실제값 + 있으면 컨센서스). G3 무료 프록시(서프라이즈·매출 YoY 가속)와
+// G2 근거(업종 임계 비교)의 원천. 컨센서스가 없는 벤더/신규상장은 estimate가 null —
+// 그 경우 G3 프록시는 매출 YoY 가속만으로 판단(§A.1 보완, 보고서 가이드 참고).
+model StockQuarterlyReport {
+  id               String    @id @default(cuid())
+  stockId          String
+  periodEnd        DateTime // 분기 종료일
+  reportedAt       DateTime? // 실적 발표일 (없으면 null)
+  revenue          Float?
+  grossProfit      Float? // G2(그로스마진 업종) 원천
+  operatingIncome  Float? // G2(영업마진 업종) 원천
+  epsActual        Float?
+  epsEstimate      Float? // 컨센서스. 벤더가 없으면 null → 판정 보류
+  revenueEstimate  Float? // 컨센서스. 벤더가 없으면 null → 판정 보류
+  source           String // 'fmp' | 'mock' 등 — 출처 추적용
+  stock            Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, periodEnd])
+  @@index([stockId, periodEnd])
+}
+
+// 최신 계산 결과 1행(종목당) — 관리자 "자동값 vs 수동 오버라이드" 패널이 읽는 곳.
+// g3Suggested/g4Suggested는 결정론적 계산 결과일 뿐, Stock.g3s/g4 확정값이 아니다.
+model StockAutoIndicator {
+  stockId      String   @id
+  asOf         DateTime // 원천 데이터 기준일
+
+  // 차트·수급 카드 표시용 (판정 입력 아님 — 보고서 가이드 §4-1)
+  price        Float?
+  high52w      Float?
+  drawdownPct  Float? // (52주 고점 − 현재가) / 52주 고점, §A.3 공식
+  ma50         Float?
+  ma200        Float?
+  atr14        Float?
+  volAvgRatio  Float? // 최근 거래량 / 20일 평균 거래량
+
+  // G4 제안값 — drawdownPct>0.20 → 1(여유), 아니면 0(과열). §A.3
+  g4Suggested  Int?
+
+  // G3 무료 프록시 입력·결과 (매출·EPS 서프라이즈 AND 매출 YoY 가속)
+  revenueYoY       Float? // 최근 분기 매출 YoY 성장률
+  revenueYoYPrev   Float? // 직전 분기 매출 YoY 성장률(가속 비교 기준)
+  epsSurprisePct   Float? // (실제-컨센서스)/|컨센서스|, null=컨센서스 없음
+  revenueSurprisePct Float?
+  g3Suggested      Int? // 계산 결과. 컨센서스 없으면 매출 가속만으로 판단(보류 가능)
+
+  // G1(수요)·G2(수익성) 제안값 — lib/indicators/industry-profiles.ts 참고.
+  // Stock.industryProfile이 없거나 그 업종에 자동 제안이 없으면 null(판정 보류).
+  grossMarginPct     Float?
+  operatingMarginPct Float?
+  g1Suggested        Int?
+  g2Suggested        Int?
+
+  // 킬라인 수치형 참고 신호(lib/indicators/kill-flags.ts) — 판정 아님, 확인용.
+  // §A.6은 킬에 질적 확인(AND)을 요구하므로 이 값만으로 kill을 자동 설정하지 않음.
+  killRevenueDecline2q Boolean?
+  killMarginDecline2q  Boolean?
+  killGuidanceCut2q    Boolean?
+
+  computedAt DateTime @updatedAt
+  source     String // 원천 프로바이더 이름(감사용)
+  stock      Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
 }
 
 enum LensType {

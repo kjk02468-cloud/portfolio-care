@@ -1,11 +1,18 @@
 import { z } from 'zod'
 import { LENS_TYPES } from './lens'
+import { INDUSTRY_PROFILE_KEYS } from './indicators/industry-profiles'
 
 export const stockSchema = z.object({
   ticker: z.string().trim().min(1).max(20).toUpperCase(),
   name: z.string().trim().min(1, 'Name is required').max(120),
   industry: z.string().trim().max(120).optional().or(z.literal('')),
   sector: z.string().trim().max(120).optional().or(z.literal('')),
+  // G1·G2 자동 제안에 쓰는 업종 프로필(lib/indicators/industry-profiles.ts).
+  // 빈 문자열은 "해제"로 취급 — null로 저장(자동 제안 없음, 판정 보류).
+  industryProfile: z
+    .union([z.enum(INDUSTRY_PROFILE_KEYS as [string, ...string[]]), z.literal('')])
+    .nullable()
+    .optional(),
 })
 
 // 매뉴얼 v4.1 G값 직접 수정 (경로 B — 종목 관리 보정용)
