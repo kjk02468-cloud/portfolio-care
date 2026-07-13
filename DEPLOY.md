@@ -12,7 +12,9 @@
 | `AUTH_SECRET` | 세션 서명 키. `npx auth secret` 또는 `openssl rand -base64 32` |
 | `AUTH_URL` | 배포된 공개 URL (예: `https://your-app.vercel.app`) |
 | `FINNHUB_API_KEY` | (선택) 실시간 시세. 없으면 데모 시세로 자동 동작 |
-| `FMP_API_KEY` | (선택) G값 자동화용 히스토리 데이터. 없으면 mock으로 동작 |
+| `FMP_API_KEY` | (선택) G값·밸류에이션 자동화용 히스토리 데이터. 없으면 mock으로 동작 |
+| `ANTHROPIC_API_KEY` | (선택) 보고서 서술 초안(하우스 보이스). 없으면 서술은 `[대괄호]` 템플릿 유지 |
+| `ADMIN_EMAILS` | (선택) 쉼표 구분 관리자 이메일. 로그인 시 자동 ADMIN 승격 |
 | `CRON_SECRET` | 일일 지표 자동 새로고침 크론 인증. `openssl rand -base64 32` |
 
 ---
