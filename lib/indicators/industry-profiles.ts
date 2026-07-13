@@ -11,6 +11,8 @@
 export type IndustryProfileKey =
   | 'saas'
   | 'semiconductor'
+  | 'connectivity_fabless'
+  | 'optical_hardware'
   | 'ems'
   | 'memory_ip'
   | 'biotech'
@@ -54,6 +56,36 @@ export const INDUSTRY_PROFILES: Record<IndustryProfileKey, IndustryProfile> = {
     label: '반도체/하드웨어',
     g1: { revenueYoYThresholdPct: null, caveat: 'book-to-bill 데이터 벤더에서 확보 불가 — 자동 제안 없음(판정 보류)' },
     g2: { metric: null, thresholdPct: null, caveat: '원문이 수치 임계를 주지 않음("GM·수주 가시성") — 자동 제안 없음(판정 보류)' },
+  },
+  // AI 연결 팹리스(CRDO·ALAB 등). 리서치 근거(2026-07): 팹리스 반도체 GM 정상범위
+  // 50~70%(리더 60%+, TMT IB / CSIMarket). CRDO GM 68%·ALAB 76%로 모두 통과 수준.
+  // 매출은 업사이클에 100%+ 성장 — 25%를 「수요 확인」 프록시 하한으로 둠(book-to-bill 근사).
+  connectivity_fabless: {
+    label: '연결·광학 반도체 (팹리스)',
+    g1: {
+      revenueYoYThresholdPct: 25,
+      caveat: '원문은 book-to-bill≥1.0(수주); 매출 YoY로 근사 — 수주≠매출·후행. AI 연결 급성장기라 25% 이상을 수요 확인으로 봄',
+    },
+    g2: {
+      metric: 'grossMargin',
+      thresholdPct: 60,
+      caveat: '팹리스 반도체 GM 정상범위 50~70%(리더 60%+). 60% 미만이면 마진 이상 신호 — 원문 GM 기준과 정합',
+    },
+  },
+  // 광학 하드웨어/부품 제조(AAOI 등). 리서치 근거(2026-07): 광부품 제조는 IDM형
+  // 저마진(30~45%), AAOI 실제 GM ~28~30%. 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하
+  // 지속)과 정합 — AAOI가 경계선에 서는 것이 정상(마진이 곧 스윙 팩터).
+  optical_hardware: {
+    label: '광학 하드웨어/부품',
+    g1: {
+      revenueYoYThresholdPct: 20,
+      caveat: '원문은 book-to-bill; 매출 YoY로 근사. 광부품은 CATV+데이터센터로 lumpy — 20% 이상을 수요 확인으로 봄',
+    },
+    g2: {
+      metric: 'grossMargin',
+      thresholdPct: 30,
+      caveat: '광학 하드웨어 제조는 저마진(IDM형 30~45%). 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하 지속)과 정합',
+    },
   },
   ems: {
     label: 'EMS(제조)',
