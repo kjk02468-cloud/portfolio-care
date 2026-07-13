@@ -32,7 +32,10 @@ export async function generateReportDraft(
 ): Promise<string> {
   const stock = await prisma.stock.findUnique({
     where: { id: stockId },
-    include: { autoIndicator: true },
+    include: {
+      autoIndicator: true,
+      stageChanges: { orderBy: { createdAt: 'desc' }, take: 5 },
+    },
   })
   if (!stock) throw new Error('종목을 찾을 수 없어요.')
 
@@ -160,7 +163,16 @@ ${killNote ? `\n> 참고 — 수치형 킬 확인 신호 감지: ${killNote}. �
 
 | 날짜 | 변경 전 → 후 | 직접 원인 | 바뀌지 않은 것 | 출처 |
 |---|---|---|---|---|
-${stock.stageNote ? `| ${stock.stageUpdatedAt ? formatDate(stock.stageUpdatedAt) : '[날짜]'} | [전 단계] → ${stageLabel} | ${stock.stageNote} | [유지된 판정] | [출처] |` : '| [YYYY-MM-DD] | [전 단계] → [현 단계] | [직접 사실] | [유지된 판정] | [출처] |'}
+${
+    stock.stageChanges.length > 0
+      ? stock.stageChanges
+          .map(
+            (c) =>
+              `| ${formatDate(c.createdAt)} | ${c.fromStage} → ${c.toStage} | ${c.directCause} | ${c.unchanged ?? '—'} | ${c.source === 'apply' ? '보고서 발행' : '수동 보정'} |`,
+          )
+          .join('\n')
+      : '| [YYYY-MM-DD] | [전 단계] → [현 단계] | [직접 사실] | [유지된 판정] | [출처] |'
+  }
 
 ## 데이터와 한계
 

@@ -71,12 +71,14 @@ export function AutoIndicatorPanel({
   indicator,
   current,
   quarterlyReports = [],
+  stageUpdatedAt = null,
 }: {
   stockId: string
   industryProfile: string | null
   indicator: AutoIndicatorData | null
   current: StockCurrentStage
   quarterlyReports?: RawQuarterlyReport[]
+  stageUpdatedAt?: string | null
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
@@ -156,6 +158,17 @@ export function AutoIndicatorPanel({
     revs.length >= 4 && (Math.max(...revs) - Math.min(...revs)) / Math.max(...revs) < 0.015
   const isMock = indicator?.source === 'mock'
 
+  // §A.10 판정 주기: G3는 실적 발표 후 갱신해야 한다. 가장 최근 실적 발표일이 마지막
+  // 단계 갱신일보다 뒤면 "새 실적 이후 아직 재판정 안 됨" — 관리자에게 표시만(자동 변경 아님).
+  const latestReportedAt = quarterlyReports
+    .map((r) => r.reportedAt)
+    .filter((v): v is string => v !== null)
+    .sort()
+    .at(-1)
+  const earningsPending =
+    latestReportedAt !== undefined &&
+    (stageUpdatedAt === null || latestReportedAt > stageUpdatedAt)
+
   return (
     <div className="mt-2 space-y-3 rounded-xl border border-border bg-surface-2/40 p-3">
       <div className="flex items-center justify-between">
@@ -193,6 +206,13 @@ export function AutoIndicatorPanel({
         <div className="rounded-lg border border-loss/40 bg-loss/10 px-2.5 py-2 text-xs text-loss">
           ⚠ <b>실데이터 아님 (mock).</b> FMP 호출이 실패해 가상 데이터로 계산됐어요. 이
           제안값·차트를 신뢰하지 마세요 — 새로고침을 다시 누르거나, FMP 키·쿼터를 확인하세요.
+        </div>
+      )}
+      {earningsPending && (
+        <div className="rounded-lg border border-brand/40 bg-brand/10 px-2.5 py-2 text-xs text-brand">
+          🔔 <b>새 실적 발표됨 ({latestReportedAt?.slice(0, 10)}).</b> 마지막 판정
+          {stageUpdatedAt ? ` (${stageUpdatedAt.slice(0, 10)})` : ''} 이후 실적이 나왔어요 —
+          §A.10대로 G3를 재판정하세요. 아래 G3 신호를 확인하고 적용하면 이 알림이 사라져요.
         </div>
       )}
       {ttmSuspect && !isMock && (

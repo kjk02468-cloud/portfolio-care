@@ -14,6 +14,7 @@ export default async function AdminStocksPage() {
   // DateTime → ISO 문자열로 직렬화 (lib/analysis.ts와 동일한 관례).
   const stocks = rows.map((s) => ({
     ...s,
+    stageUpdatedAt: s.stageUpdatedAt ? s.stageUpdatedAt.toISOString() : null,
     autoIndicator: s.autoIndicator
       ? {
           ...s.autoIndicator,

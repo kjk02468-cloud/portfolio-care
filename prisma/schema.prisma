@@ -119,6 +119,25 @@ model Stock {
   priceBars        StockPriceBar[]
   quarterlyReports StockQuarterlyReport[]
   autoIndicator    StockAutoIndicator?
+  stageChanges     StageChangeLog[]
+}
+
+// 단계 변경 이력 (§7 변경 이력 표준 형식). 확정 판정(Stock.g1~g4)이 바뀌어 파생
+// 단계가 달라질 때만 1행 추가 — 보고서 판정 이력·구독자 알림·감사 추적의 단일 출처.
+model StageChangeLog {
+  id          String   @id @default(cuid())
+  stockId     String
+  ticker      String
+  fromStage   String // 변경 전 단계 라벨 (예: "3단계", "미판정")
+  toStage     String // 변경 후 라벨
+  directCause String // 직접 원인 (판정 근거 1줄)
+  unchanged   String? // 바뀌지 않은 것 (예: "G1·G2 유지")
+  source      String // 'apply'(보고서 발행) | 'admin'(수동 보정)
+  createdAt   DateTime @default(now())
+  stock       Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([stockId, createdAt])
+  @@index([createdAt])
 }
 
 // ── G값 자동화 파이프라인 (2026-07 로드맵) ───────────────────────────────────

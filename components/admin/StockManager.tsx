@@ -18,6 +18,7 @@ interface Stock {
   g4: number | null
   kill: boolean
   stageNote: string | null
+  stageUpdatedAt: string | null
   autoIndicator: AutoIndicatorData | null
   quarterlyReports: RawQuarterlyReport[]
 }
@@ -155,6 +156,7 @@ export function StockManager({ stocks }: { stocks: Stock[] }) {
                   industryProfile={s.industryProfile}
                   indicator={s.autoIndicator}
                   quarterlyReports={s.quarterlyReports}
+                  stageUpdatedAt={s.stageUpdatedAt}
                   current={{
                     g1: s.g1,
                     g2: s.g2,

@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { judgeStock, applyG3, STAGE_META } from './stage-judge'
+import { recordStageChange } from './stage-history'
 import { lensLabel } from './lens'
 import type { StageUpdateEntry } from './report-templates'
 
@@ -50,7 +51,9 @@ export async function applyStageUpdates(
 
     if (changes.length === 0) continue
 
-    const judged = judgeStock({ g1, g2, g3s, g4, kill })
+    const before = { g1: stock.g1, g2: stock.g2, g3s: stock.g3s, g4: stock.g4, kill: stock.kill }
+    const after = { g1, g2, g3s, g4, kill }
+    const judged = judgeStock(after)
     const stageStr = judged.judged
       ? `${STAGE_META[judged.stage].label}${judged.subtype ? ` ${judged.subtype}` : ''}(${judged.rule})`
       : '미판정'
@@ -67,6 +70,16 @@ export async function applyStageUpdates(
         stageNote: note.slice(0, 300),
         stageUpdatedAt: new Date(),
       },
+    })
+
+    // §7 이력 — 단계가 실제로 바뀐 경우만 기록
+    await recordStageChange({
+      stockId: e.stockId,
+      ticker: stock.ticker,
+      before,
+      after,
+      directCause: `[${lensLabel(lensType)}] '${postTitle}': ${changes.join(', ')}`,
+      source: 'apply',
     })
   }
 }

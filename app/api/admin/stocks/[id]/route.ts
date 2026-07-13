@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth-guards'
 import { prisma } from '@/lib/prisma'
 import { stockSchema, stockStageSchema } from '@/lib/validation'
+import { recordStageChange } from '@/lib/stage-history'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -19,6 +20,10 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: 'Invalid stage input' }, { status: 400 })
     }
     const { g1, g2, g3s, g4, kill, stageNote } = parsed.data
+    const existing = await prisma.stock.findUnique({
+      where: { id },
+      select: { g1: true, g2: true, g3s: true, g4: true, kill: true, ticker: true },
+    })
     const stock = await prisma.stock.update({
       where: { id },
       data: {
@@ -31,6 +36,17 @@ export async function PATCH(req: Request, { params }: Params) {
         stageUpdatedAt: new Date(),
       },
     })
+    // §7 이력 — 수동 보정으로 단계가 바뀐 경우만 기록
+    if (existing) {
+      await recordStageChange({
+        stockId: id,
+        ticker: existing.ticker,
+        before: existing,
+        after: { g1, g2, g3s, g4, kill },
+        directCause: stageNote || '수동 보정 (종목 관리)',
+        source: 'admin',
+      })
+    }
     return NextResponse.json({ stock })
   }
 
