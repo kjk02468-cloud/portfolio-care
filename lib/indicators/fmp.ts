@@ -20,6 +20,8 @@ interface FmpHistoricalResponse {
 interface FmpIncomeStatement {
   date: string // period end
   revenue: number
+  grossProfit: number | null
+  operatingIncome: number | null
 }
 
 // FMP earnings-surprises response shape (fields we use).
@@ -101,6 +103,8 @@ function makeFmpProvider(apiKey: string): IndicatorProvider {
           periodEnd: r.date,
           reportedAt: s?.date ?? null,
           revenue: r.revenue ?? null,
+          grossProfit: r.grossProfit ?? null,
+          operatingIncome: r.operatingIncome ?? null,
           epsActual: s?.actualEarningResult ?? null,
           epsEstimate: s?.estimatedEarning ?? null,
           // FMP's free-tier earnings-surprises endpoint doesn't carry a revenue

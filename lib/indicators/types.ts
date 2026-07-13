@@ -14,6 +14,8 @@ export interface QuarterlyReport {
   periodEnd: string // YYYY-MM-DD, 분기 종료일
   reportedAt: string | null // 실적 발표일. 없으면 null
   revenue: number | null
+  grossProfit: number | null // G2(그로스마진 업종) 원천
+  operatingIncome: number | null // G2(영업마진 업종) 원천
   epsActual: number | null
   epsEstimate: number | null // 컨센서스. 벤더가 못 주면 null → G3 프록시는 매출만으로 판단
   revenueEstimate: number | null

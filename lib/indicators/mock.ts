@@ -72,6 +72,12 @@ function mockQuarterlyReports(symbol: string, quarters: number): QuarterlyReport
   const accelerating = hash(sym + ':story') % 2 === 0
   const baseGrowth = accelerating ? 0.03 : 0.015 // quarterly growth, before drift
 
+  // Margin levels span a wide range so different industry-profile thresholds
+  // (e.g. memory_ip GM>=70%, EMS OPM>=5%) land on both sides for different tickers.
+  const baseGrossMarginPct = 30 + (hash(sym + ':gm') % 50) // 30%..80%
+  const baseOpMarginPct = -5 + (hash(sym + ':opm') % 30) // -5%..25%
+  const marginDriftPerQuarter = accelerating ? 0.3 : -0.3 // pp/quarter, ties to the story
+
   const today = new Date()
   const reports: QuarterlyReport[] = []
   for (let i = quarters - 1; i >= 0; i--) {
@@ -91,10 +97,17 @@ function mockQuarterlyReports(symbol: string, quarters: number): QuarterlyReport
     const epsActual = epsBase * (1 + growth * (accelerating ? 1.2 : 0.6))
     const epsEstimate = epsActual * (1 - ((hash(sym + i + 'ee') % 30) - 15) / 1000)
 
+    const grossMarginPct = baseGrossMarginPct + marginDriftPerQuarter * quarterIndex
+    const opMarginPct = baseOpMarginPct + marginDriftPerQuarter * quarterIndex
+    const grossProfit = revenue * (grossMarginPct / 100)
+    const operatingIncome = revenue * (opMarginPct / 100)
+
     reports.push({
       periodEnd: toISODate(periodEnd),
       reportedAt: toISODate(reportedAt),
       revenue: round2(revenue),
+      grossProfit: round2(grossProfit),
+      operatingIncome: round2(operatingIncome),
       epsActual: round2(epsActual),
       epsEstimate: round2(epsEstimate),
       revenueEstimate: round2(revenueEstimate),

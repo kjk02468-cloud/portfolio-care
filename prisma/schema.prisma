@@ -112,6 +112,10 @@ model Stock {
   stageNote      String?   // 최근 판정 근거 1줄
   stageUpdatedAt DateTime?
 
+  // 업종별 G1·G2 치환표(매뉴얼) 중 어느 프로필을 적용할지. null=자동 제안 안 함(판정 보류).
+  // 값은 lib/indicators/industry-profiles.ts의 IndustryProfileKey와 일치해야 함.
+  industryProfile String?
+
   priceBars        StockPriceBar[]
   quarterlyReports StockQuarterlyReport[]
   autoIndicator    StockAutoIndicator?
@@ -147,6 +151,8 @@ model StockQuarterlyReport {
   periodEnd        DateTime // 분기 종료일
   reportedAt       DateTime? // 실적 발표일 (없으면 null)
   revenue          Float?
+  grossProfit      Float? // G2(그로스마진 업종) 원천
+  operatingIncome  Float? // G2(영업마진 업종) 원천
   epsActual        Float?
   epsEstimate      Float? // 컨센서스. 벤더가 없으면 null → 판정 보류
   revenueEstimate  Float? // 컨센서스. 벤더가 없으면 null → 판정 보류
@@ -181,6 +187,13 @@ model StockAutoIndicator {
   epsSurprisePct   Float? // (실제-컨센서스)/|컨센서스|, null=컨센서스 없음
   revenueSurprisePct Float?
   g3Suggested      Int? // 계산 결과. 컨센서스 없으면 매출 가속만으로 판단(보류 가능)
+
+  // G1(수요)·G2(수익성) 제안값 — lib/indicators/industry-profiles.ts 참고.
+  // Stock.industryProfile이 없거나 그 업종에 자동 제안이 없으면 null(판정 보류).
+  grossMarginPct     Float?
+  operatingMarginPct Float?
+  g1Suggested        Int?
+  g2Suggested        Int?
 
   computedAt DateTime @updatedAt
   source     String // 원천 프로바이더 이름(감사용)
