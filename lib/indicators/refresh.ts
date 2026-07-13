@@ -2,6 +2,7 @@ import { prisma } from '../prisma'
 // Import the provider directly (not from './index') to avoid a circular
 // import — index.ts re-exports this module.
 import { indicatorProvider as indicators } from './fmp'
+import { mockIndicatorProvider } from './mock'
 import { computeChartIndicators } from './calc'
 import { computeG1G2 } from './financials'
 import { computeG3 } from './g3-proxy'
@@ -38,10 +39,26 @@ export async function refreshStockIndicator(
     select: { g1: true, g2: true, industryProfile: true },
   })
 
-  const [bars, reports] = await Promise.all([
+  // 실제 벤더 호출이 비면(키 유효하나 API가 빈 응답/에러) mock으로 명시적으로
+  // 폴백한다 — fmp.ts는 절대 내부에서 조용히 mock을 섞지 않는다(그러면 source가
+  // 'fmp'인데 실제로는 mock인 상황이 생겨 디버깅 불가능해짐, 실제로 겪은 버그).
+  let [bars, reports] = await Promise.all([
     indicators.getDailyBars(ticker),
     indicators.getQuarterlyReports(ticker),
   ])
+  const barsSource: 'fmp' | 'mock' = indicators.name === 'fmp' && bars.length > 0 ? 'fmp' : 'mock'
+  const reportsSource: 'fmp' | 'mock' =
+    indicators.name === 'fmp' && reports.length > 0 ? 'fmp' : 'mock'
+  if (bars.length === 0) {
+    console.warn(`[indicators] ${ticker}: bars fallback to mock (vendor returned none)`)
+    bars = await mockIndicatorProvider.getDailyBars(ticker)
+  }
+  if (reports.length === 0) {
+    console.warn(`[indicators] ${ticker}: reports fallback to mock (vendor returned none)`)
+    reports = await mockIndicatorProvider.getQuarterlyReports(ticker)
+  }
+  // 하나라도 mock으로 대체됐으면 전체 source를 'mock'으로 정직하게 표시한다.
+  const source = barsSource === 'fmp' && reportsSource === 'fmp' ? 'fmp' : 'mock'
 
   await prisma.$transaction([
     prisma.stockPriceBar.deleteMany({ where: { stockId } }),
@@ -68,7 +85,7 @@ export async function refreshStockIndicator(
         epsActual: r.epsActual,
         epsEstimate: r.epsEstimate,
         revenueEstimate: r.revenueEstimate,
-        source: indicators.name,
+        source,
       })),
     }),
   ])
@@ -118,7 +135,7 @@ export async function refreshStockIndicator(
     killRevenueDecline2q: killFlags.revenueDecline2q,
     killMarginDecline2q: killFlags.marginDecline2q,
     killGuidanceCut2q: killFlags.guidanceCut2q,
-    source: indicators.name,
+    source,
   }
   await prisma.stockAutoIndicator.upsert({
     where: { stockId },

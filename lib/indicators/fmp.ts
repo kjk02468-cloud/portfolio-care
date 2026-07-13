@@ -32,22 +32,31 @@ interface FmpEarningsSurprise {
 }
 
 function makeFmpProvider(apiKey: string): IndicatorProvider {
-  async function fetchJson<T>(url: string): Promise<T | null> {
+  // path는 로그용 — apikey 쿼리 파라미터가 섞여 들어오지 않도록 별도로 받는다.
+  async function fetchJson<T>(url: string, path: string): Promise<T | null> {
     try {
       const res = await fetch(url, { next: { revalidate: 3600 } })
-      if (!res.ok) return null
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        console.error(`[fmp] ${path} → HTTP ${res.status}`, body.slice(0, 300))
+        return null
+      }
       return (await res.json()) as T
-    } catch {
+    } catch (err) {
+      console.error(`[fmp] ${path} → fetch failed`, err)
       return null
     }
   }
 
+  // 실패해도 여기서 mock으로 조용히 대체하지 않는다 — 그러면 source가 'fmp'인데
+  // 실제로는 mock 데이터인 상황이 생겨 디버깅이 불가능해진다(실제로 겪은 버그).
+  // 빈 배열을 그대로 반환하고, 폴백 여부·source 결정은 호출자(refresh.ts)가 한다.
   async function getDailyBars(symbol: string, lookbackDays = 380): Promise<PriceBar[]> {
     const sym = symbol.toUpperCase()
     const url = `${BASE}/historical-price-full/${encodeURIComponent(sym)}?timeseries=${lookbackDays}&apikey=${apiKey}`
-    const data = await fetchJson<FmpHistoricalResponse>(url)
+    const data = await fetchJson<FmpHistoricalResponse>(url, `historical-price-full/${sym}`)
     const rows = data?.historical
-    if (!rows || rows.length === 0) return mockIndicatorProvider.getDailyBars(sym, lookbackDays)
+    if (!rows || rows.length === 0) return []
 
     // FMP returns newest-first; the provider contract is ascending (oldest-first).
     return rows
@@ -67,13 +76,15 @@ function makeFmpProvider(apiKey: string): IndicatorProvider {
     const [income, surprises] = await Promise.all([
       fetchJson<FmpIncomeStatement[]>(
         `${BASE}/income-statement/${encodeURIComponent(sym)}?period=quarter&limit=${quarters}&apikey=${apiKey}`,
+        `income-statement/${sym}`,
       ),
       fetchJson<FmpEarningsSurprise[]>(
         `${BASE}/earnings-surprises/${encodeURIComponent(sym)}?apikey=${apiKey}`,
+        `earnings-surprises/${sym}`,
       ),
     ])
     if (!income || income.length === 0) {
-      return mockIndicatorProvider.getQuarterlyReports(sym, quarters)
+      return []
     }
 
     // Match each income-statement quarter to the nearest earnings-surprise entry
