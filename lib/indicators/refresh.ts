@@ -4,6 +4,7 @@ import { prisma } from '../prisma'
 import { indicatorProvider as indicators } from './fmp'
 import { computeChartIndicators } from './calc'
 import { computeG1G2 } from './financials'
+import { computeG3 } from './g3-proxy'
 import { INDUSTRY_PROFILES, type IndustryProfileKey } from './industry-profiles'
 
 export interface RefreshResult {
@@ -21,11 +22,11 @@ function isProfileKey(v: string | null): v is IndustryProfileKey {
 /**
  * Fetches daily bars + quarterly financials for one stock, replaces both
  * caches wholesale (they mirror the vendor's window, so no diff is needed),
- * then recomputes and upserts G4/chart + G1/G2 suggestions onto
- * StockAutoIndicator. G3 fields are left untouched — the earnings-surprise
- * proxy (Phase D) owns those. Confirmed G values (Stock.g1/g2) are read-only
- * here, used only as the hysteresis "previous" reference (§A.5) — this
- * function never writes them.
+ * then recomputes and upserts G4/chart + G1/G2/G3 suggestions onto
+ * StockAutoIndicator. Confirmed G values (Stock.g1/g2/g3s) are read-only
+ * here — used only as the §A.5 hysteresis "previous" reference for G1/G2 —
+ * this function never writes them. G3 has no hysteresis of its own (§A.2's
+ * G3s decay is the smoothing mechanism), so it's a clean per-quarter signal.
  */
 export async function refreshStockIndicator(
   stockId: string,
@@ -80,6 +81,7 @@ export async function refreshStockIndicator(
   const toG = (v: number | null | undefined): 0 | 1 | null =>
     v === null || v === undefined ? null : v === 1 ? 1 : 0
   const g1g2 = computeG1G2(reports, profile, toG(stock?.g1), toG(stock?.g2))
+  const g3 = computeG3(reports, stock?.industryProfile === 'pre_profit')
 
   if (!chart) {
     return {
@@ -107,6 +109,9 @@ export async function refreshStockIndicator(
     operatingMarginPct: g1g2.operatingMarginPct,
     g1Suggested: g1g2.g1Suggested,
     g2Suggested: g1g2.g2Suggested,
+    epsSurprisePct: g3.epsSurprisePct,
+    revenueSurprisePct: g3.revenueSurprisePct,
+    g3Suggested: g3.g3Suggested,
     source: indicators.name,
   }
   await prisma.stockAutoIndicator.upsert({
