@@ -41,6 +41,18 @@ export interface StockCurrentStage {
   stageNote: string | null
 }
 
+export interface RawQuarterlyReport {
+  periodEnd: string
+  reportedAt: string | null
+  revenue: number | null
+  grossProfit: number | null
+  operatingIncome: number | null
+  epsActual: number | null
+  epsEstimate: number | null
+  revenueEstimate: number | null
+  source: string
+}
+
 const pct = (v: number | null, digits = 1) => (v === null ? '—' : `${v.toFixed(digits)}%`)
 const money = (v: number | null) => (v === null ? '—' : v.toFixed(2))
 
@@ -58,11 +70,13 @@ export function AutoIndicatorPanel({
   industryProfile,
   indicator,
   current,
+  quarterlyReports = [],
 }: {
   stockId: string
   industryProfile: string | null
   indicator: AutoIndicatorData | null
   current: StockCurrentStage
+  quarterlyReports?: RawQuarterlyReport[]
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
@@ -287,6 +301,63 @@ export function AutoIndicatorPanel({
                 수치 신호일 뿐 판정 아님 — 매뉴얼상 킬은 질적 확인(고객 이탈·경쟁 등)이 더 필요해요.
               </p>
             </div>
+          )}
+
+          {/* 원본 분기 재무 — 자동 계산값이 이상해 보일 때 여기서 직접 확인 */}
+          {quarterlyReports.length > 0 && (
+            <details className="rounded-lg bg-surface px-2.5 py-2 text-xs">
+              <summary className="cursor-pointer font-medium text-secondary">
+                최근 분기 재무 원본 ({quarterlyReports.length}개 · 값이 이상하면 여기서 확인)
+              </summary>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full min-w-[520px] text-[11px]">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted">
+                      <th className="py-1 pr-2 font-medium">분기말</th>
+                      <th className="py-1 pr-2 font-medium">매출</th>
+                      <th className="py-1 pr-2 font-medium">GM</th>
+                      <th className="py-1 pr-2 font-medium">OPM</th>
+                      <th className="py-1 pr-2 font-medium">EPS 실제</th>
+                      <th className="py-1 pr-2 font-medium">EPS 컨센</th>
+                      <th className="py-1 font-medium">출처</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quarterlyReports.map((r) => {
+                      const gm =
+                        r.grossProfit !== null && r.revenue ? (r.grossProfit / r.revenue) * 100 : null
+                      const opm =
+                        r.operatingIncome !== null && r.revenue
+                          ? (r.operatingIncome / r.revenue) * 100
+                          : null
+                      return (
+                        <tr key={r.periodEnd} className="border-b border-border/60 last:border-0">
+                          <td className="py-1 pr-2 tabular-nums text-primary">
+                            {r.periodEnd.slice(0, 10)}
+                          </td>
+                          <td className="py-1 pr-2 tabular-nums text-secondary">
+                            {r.revenue !== null ? Math.round(r.revenue).toLocaleString() : '—'}
+                          </td>
+                          <td className="py-1 pr-2 tabular-nums text-secondary">{pct(gm)}</td>
+                          <td className="py-1 pr-2 tabular-nums text-secondary">{pct(opm)}</td>
+                          <td className="py-1 pr-2 tabular-nums text-secondary">
+                            {money(r.epsActual)}
+                          </td>
+                          <td className="py-1 pr-2 tabular-nums text-secondary">
+                            {money(r.epsEstimate)}
+                          </td>
+                          <td className="py-1 text-muted">{r.source}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-1.5 text-muted">
+                분기마다 매출·이익이 거의 똑같이 반복되면 벤더가 연간(TTM) 수치를 분기별로 잘못
+                내려주고 있다는 신호예요 — 그럴 땐 GM·OPM 제안값을 신뢰하지 마세요.
+              </p>
+            </details>
           )}
 
           <p className="text-[10px] text-muted">

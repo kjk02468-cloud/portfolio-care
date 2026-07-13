@@ -6,7 +6,10 @@ export const dynamic = 'force-dynamic'
 export default async function AdminStocksPage() {
   const rows = await prisma.stock.findMany({
     orderBy: { ticker: 'asc' },
-    include: { autoIndicator: true },
+    include: {
+      autoIndicator: true,
+      quarterlyReports: { orderBy: { periodEnd: 'desc' }, take: 8 },
+    },
   })
   // DateTime → ISO 문자열로 직렬화 (lib/analysis.ts와 동일한 관례).
   const stocks = rows.map((s) => ({
@@ -18,6 +21,11 @@ export default async function AdminStocksPage() {
           computedAt: s.autoIndicator.computedAt.toISOString(),
         }
       : null,
+    quarterlyReports: s.quarterlyReports.map((r) => ({
+      ...r,
+      periodEnd: r.periodEnd.toISOString(),
+      reportedAt: r.reportedAt ? r.reportedAt.toISOString() : null,
+    })),
   }))
 
   return (
