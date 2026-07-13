@@ -145,6 +145,17 @@ export function AutoIndicatorPanel({
     : []
   const activeKillFlags = killFlagList.filter(([, v]) => v === true)
 
+  // 데이터 신뢰성 경고: 벤더가 연간(TTM) 수치를 분기마다 반복 제공하면 분기 매출이
+  // 비정상적으로 평탄하게 나온다 — 최근 4개 분기 매출이 서로 ±1.5% 내로 붙어 있으면
+  // 의심 신호(실제 분기 매출은 이보다 훨씬 크게 변동). 값이 없으면 판단하지 않는다.
+  const revs = quarterlyReports
+    .slice(0, 4)
+    .map((r) => r.revenue)
+    .filter((v): v is number => v !== null && v > 0)
+  const ttmSuspect =
+    revs.length >= 4 && (Math.max(...revs) - Math.min(...revs)) / Math.max(...revs) < 0.015
+  const isMock = indicator?.source === 'mock'
+
   return (
     <div className="mt-2 space-y-3 rounded-xl border border-border bg-surface-2/40 p-3">
       <div className="flex items-center justify-between">
@@ -176,6 +187,21 @@ export function AutoIndicatorPanel({
           ))}
         </select>
       </label>
+
+      {/* 데이터 신뢰성 경고 — 제안값보다 위에 크게 */}
+      {isMock && (
+        <div className="rounded-lg border border-loss/40 bg-loss/10 px-2.5 py-2 text-xs text-loss">
+          ⚠ <b>실데이터 아님 (mock).</b> FMP 호출이 실패해 가상 데이터로 계산됐어요. 이
+          제안값·차트를 신뢰하지 마세요 — 새로고침을 다시 누르거나, FMP 키·쿼터를 확인하세요.
+        </div>
+      )}
+      {ttmSuspect && !isMock && (
+        <div className="rounded-lg border border-loss/40 bg-loss/10 px-2.5 py-2 text-xs text-loss">
+          ⚠ <b>분기 매출이 비정상적으로 평탄해요.</b> 벤더가 연간(TTM) 수치를 분기마다 반복
+          제공 중일 수 있어요 — 매출YoY·마진·G2 제안값을 신뢰하지 말고 아래 &quot;분기 재무
+          원본&quot;에서 직접 확인하세요.
+        </div>
+      )}
 
       {!indicator ? (
         <p className="text-xs text-muted">아직 지표가 없어요. 새로고침을 눌러 계산하세요.</p>
