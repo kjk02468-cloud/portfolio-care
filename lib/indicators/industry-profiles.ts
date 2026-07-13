@@ -72,19 +72,20 @@ export const INDUSTRY_PROFILES: Record<IndustryProfileKey, IndustryProfile> = {
       caveat: '팹리스 반도체 GM 정상범위 50~70%(리더 60%+). 60% 미만이면 마진 이상 신호 — 원문 GM 기준과 정합',
     },
   },
-  // 광학 하드웨어/부품 제조(AAOI 등). 리서치 근거(2026-07): 광부품 제조는 IDM형
-  // 저마진(30~45%), AAOI 실제 GM ~28~30%. 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하
-  // 지속)과 정합 — AAOI가 경계선에 서는 것이 정상(마진이 곧 스윙 팩터).
+  // 저마진 하드웨어 제조(자체 생산). 광학 부품(AAOI)·에너지 하드웨어(BE 등) 공용.
+  // 리서치 근거(2026-07): 자체생산 하드웨어는 IDM형 저마진(30~45%). AAOI GM ~28~30%,
+  // BE GM ~30%(흑자 전환). 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하 지속)과 정합 —
+  // 두 종목 모두 경계선에 서는 것이 정상(마진이 곧 스윙 팩터).
   optical_hardware: {
-    label: '광학 하드웨어/부품',
+    label: '하드웨어 제조 (저마진·광학/에너지)',
     g1: {
       revenueYoYThresholdPct: 20,
-      caveat: '원문은 book-to-bill; 매출 YoY로 근사. 광부품은 CATV+데이터센터로 lumpy — 20% 이상을 수요 확인으로 봄',
+      caveat: '원문은 book-to-bill; 매출 YoY로 근사. 하드웨어 수요는 lumpy — 20% 이상을 수요 확인으로 봄',
     },
     g2: {
       metric: 'grossMargin',
       thresholdPct: 30,
-      caveat: '광학 하드웨어 제조는 저마진(IDM형 30~45%). 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하 지속)과 정합',
+      caveat: '자체생산 하드웨어는 저마진(IDM형 30~45%). 임계 30%는 매뉴얼 AAOI 킬라인(GM 30% 이하 지속)과 정합',
     },
   },
   ems: {
